@@ -1,16 +1,24 @@
 package com.sinaev.services;
 
 import com.sinaev.models.User;
+import com.sinaev.repositories.UserRepository;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 /**
  * Manages user registration and authentication.
  */
 public class UserService {
-    private final List<User> users = new ArrayList<>();
+    private final UserRepository userRepository;
+
+    /**
+     * Constructs a UserService with the specified repository.
+     *
+     * @param userRepository the repository for managing users
+     */
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     /**
      * Logs in the specified user if they are registered and sets their admin status.
@@ -40,12 +48,11 @@ public class UserService {
      */
     public void register(User user) {
         if (!loginIsTaken(user)) {
-            users.add(user);
-            System.out.println("User with login: '" + user.getUsername() + "'" + " and password: '" + user.getPassword() + "' successfully registered");
+            userRepository.save(user);
+            System.out.println("User with login: '" + user.getUsername() + "' and password: '" + user.getPassword() + "' successfully registered");
         } else {
             System.out.println("Login: '" + user.getUsername() + "' is already taken. Try another one");
         }
-
     }
 
     /**
@@ -56,8 +63,9 @@ public class UserService {
      * @return true if the user with the specified login and password is registered, false otherwise
      */
     private boolean isRegistered(String username, String password) {
-        return users.stream()
-                .anyMatch(u -> u.getUsername().equals(username) && u.getPassword().equals(password));
+        return userRepository.findByUsername(username)
+                .map(user -> user.getPassword().equals(password))
+                .orElse(false);
     }
 
     /**
@@ -67,8 +75,9 @@ public class UserService {
      * @return true if the user is an admin, false otherwise
      */
     private boolean isAdmin(String username) {
-        return users.stream()
-                .anyMatch(u -> u.getUsername().equals(username) && u.isAdmin());
+        return userRepository.findByUsername(username)
+                .map(User::isAdmin)
+                .orElse(false);
     }
 
     /**
@@ -78,8 +87,7 @@ public class UserService {
      * @return true if the username is already taken, false otherwise
      */
     private boolean loginIsTaken(User user) {
-        return users.stream()
-                .anyMatch(u -> u.getUsername().equals(user.getUsername()));
+        return userRepository.existsByUsername(user.getUsername());
     }
 
     /**
@@ -89,9 +97,6 @@ public class UserService {
      * @return an Optional containing the user if found, or an empty Optional if no user with the specified username exists
      */
     public Optional<User> getUserByUsername(String username) {
-        return users.stream()
-                .filter(user -> user.getUsername().equals(username))
-                .findFirst();
+        return userRepository.findByUsername(username);
     }
-
 }

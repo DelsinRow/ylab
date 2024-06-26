@@ -3,6 +3,7 @@ package com.sinaev.services;
 import com.sinaev.models.Booking;
 import com.sinaev.models.Room;
 import com.sinaev.models.User;
+import com.sinaev.repositories.BookingRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -17,19 +18,16 @@ import java.util.stream.Collectors;
  * Booking service class that manages bookings for resources.
  */
 public class BookingService {
-    private final List<Booking> bookings;
-    private final List<Room> rooms;
+    private final BookingRepository bookingRepository;
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH");
 
     /**
-     * Constructs a BookingService with the specified list of bookings and rooms.
+     * Constructs a BookingService with the specified repository.
      *
-     * @param bookings the list of bookings to manage
-     * @param rooms    the list of rooms to manage
+     * @param bookingRepository the repository for managing bookings
      */
-    public BookingService(List<Booking> bookings, List<Room> rooms) {
-        this.bookings = bookings;
-        this.rooms = rooms;
+    public BookingService(BookingRepository bookingRepository) {
+        this.bookingRepository = bookingRepository;
     }
 
     /**
@@ -43,9 +41,9 @@ public class BookingService {
     public void createBooking(User user, Room room, String startTime, String endTime) {
         LocalDateTime start = LocalDateTime.parse(startTime, dateFormatter);
         LocalDateTime end = LocalDateTime.parse(endTime, dateFormatter);
-        if (isResourceAvailable(room, start, end)) {
+        if (isRoomAvailable(room, start, end)) {
             Booking booking = new Booking(user, room, start, end);
-            bookings.add(booking);
+            bookingRepository.save(booking);
             System.out.println(booking.toString() + " successfully created.");
         } else {
             System.out.println("This time is not available for bookings. Try another time.");
@@ -66,8 +64,7 @@ public class BookingService {
             LocalDateTime startTime = date.atTime(hour, 0);
             LocalDateTime endTime = startTime.plusHours(1);
 
-            boolean isAvailable = bookings.stream()
-                    .filter(booking -> booking.getRoom().equals(room))
+            boolean isAvailable = bookingRepository.findByRoom(room).stream()
                     .noneMatch(booking -> booking.getStartTime().isBefore(endTime) && booking.getEndTime().isAfter(startTime));
 
             if (isAvailable) {
@@ -85,62 +82,61 @@ public class BookingService {
      * @param originalStartTime the original start time of the booking in the format "yyyy-MM-dd'T'HH"
      * @param newStartTime      the new start time of the booking in the format "yyyy-MM-dd'T'HH"
      * @param newEndTime        the new end time of the booking in the format "yyyy-MM-dd'T'HH"
-     * @param newRoom           the new room to be booked
+     * @param room              the booked room
      */
-    public void updateBooking(User user, String originalStartTime, String newStartTime, String newEndTime, Room newRoom) {
+    public void updateBooking(User user, Room room, String originalStartTime, Room newRoom, String newStartTime, String newEndTime) {
         LocalDateTime originalStart = LocalDateTime.parse(originalStartTime, dateFormatter);
         LocalDateTime newStart = LocalDateTime.parse(newStartTime, dateFormatter);
         LocalDateTime newEnd = LocalDateTime.parse(newEndTime, dateFormatter);
 
-        Optional<Booking> optionalBooking = bookings.stream()
-                .filter(booking -> booking.getUser().equals(user) && booking.getStartTime().equals(originalStart))
-                .findFirst();
+        Optional<Booking> optionalBooking = bookingRepository.findByRoomAndTime(originalStart, room);
 
-        if (optionalBooking.isPresent()) {
-            Booking booking = optionalBooking.get();
-
-            if (!booking.getUser().equals(user) && !user.isAdmin()) {
-                System.out.println("You are not authorized to update this booking.");
-                return;
-            }
-
-            if (isResourceAvailable(newRoom, newStart, newEnd)) {
-                booking.setStartTime(newStart);
-                booking.setEndTime(newEnd);
-                booking.setRoom(newRoom);
-                System.out.println("Booking has been updated.");
-            } else {
-                System.out.println("The new time or resource is not available. Try another time or resource.");
-            }
-        } else {
+        if (!optionalBooking.isPresent()) {
             System.out.println("Booking not found.");
+            return;
         }
+
+        Booking booking = optionalBooking.get();
+
+        if (!booking.getUser().equals(user) && !user.isAdmin()) {
+            System.out.println("You are not authorized to update this booking.");
+            return;
+        }
+
+        if (!isRoomAvailable(newRoom, newStart, newEnd)) {
+            System.out.println("The new time or room is not available. Try another time or resource.");
+            return;
+        }
+
+        booking.setStartTime(newStart);
+        booking.setEndTime(newEnd);
+        booking.setRoom(newRoom);
+        System.out.println("Booking has been updated.");
     }
 
     /**
-     * Deletes a booking if it exists and if the user is an admin.
+     * Deletes a booking if it exists and if the user is an admin or the creator of the booking.
      *
      * @param user      the user attempting to delete the booking
      * @param room      the room of the booking to delete
      * @param startTime the start time of the booking to delete
      */
     public void deleteBooking(User user, Room room, LocalDateTime startTime) {
-        Optional<Booking> optionalBooking = bookings.stream()
-                .filter(booking -> booking.getRoom().getName().equals(room.getName()) &&
-                        booking.getStartTime().equals(startTime))
-                .findFirst();
+        Optional<Booking> optionalBooking = bookingRepository.findByRoomAndTime(startTime, room);
 
-        if (optionalBooking.isPresent()) {
-            Booking booking = optionalBooking.get();
-            if (user.isAdmin() || booking.getUser().equals(user)) {
-                bookings.remove(booking);
-                System.out.println("Booking has been deleted.");
-            } else {
-                System.out.println("You do not have the right to delete this booking.");
-            }
-        } else {
+        if (!optionalBooking.isPresent()) {
             System.out.println("No booking found at the specified time for the specified room.");
+            return;
         }
+
+        Booking booking = optionalBooking.get();
+        if (!user.isAdmin() && !booking.getUser().equals(user)) {
+            System.out.println("You do not have the right to delete this booking.");
+            return;
+        }
+
+        bookingRepository.delete(booking);
+        System.out.println("Booking has been deleted.");
     }
 
     /**
@@ -153,18 +149,11 @@ public class BookingService {
      */
     public List<Booking> filterBookings(LocalDateTime date, User user, Room room) {
         if (date != null) {
-            return bookings.stream()
-                    .filter(booking -> booking.getStartTime().toLocalDate().equals(date.toLocalDate()) &&
-                            booking.getStartTime().getHour() == date.getHour())
-                    .collect(Collectors.toList());
+            return bookingRepository.findByDate(date);
         } else if (user != null) {
-            return bookings.stream()
-                    .filter(booking -> booking.getUser().equals(user))
-                    .collect(Collectors.toList());
+            return bookingRepository.findByUser(user);
         } else if (room != null) {
-            return bookings.stream()
-                    .filter(booking -> booking.getRoom().equals(room))
-                    .collect(Collectors.toList());
+            return bookingRepository.findByRoom(room);
         } else {
             return new ArrayList<>();
         }
@@ -178,10 +167,8 @@ public class BookingService {
      * @param endTime   the end time of the interval
      * @return true if the room is available in the specified time interval, false otherwise
      */
-    private boolean isResourceAvailable(Room room, LocalDateTime startTime, LocalDateTime endTime) {
-        return bookings.stream()
-                .filter(booking -> booking.getRoom().getName().equals(room.getName()))
-                .allMatch(booking -> booking.getEndTime().isBefore(startTime) || booking.getStartTime().isAfter(endTime)) ||
-                bookings.stream().noneMatch(booking -> booking.getRoom().getName().equals(room.getName()));
+    private boolean isRoomAvailable(Room room, LocalDateTime startTime, LocalDateTime endTime) {
+        return bookingRepository.findByRoom(room).stream()
+                .allMatch(booking -> booking.getEndTime().isBefore(startTime) || booking.getStartTime().isAfter(endTime));
     }
 }
