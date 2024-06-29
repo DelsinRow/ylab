@@ -6,7 +6,6 @@ import com.sinaev.models.User;
 import com.sinaev.repositories.RoomRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.Collections;
 import java.util.List;
@@ -109,13 +108,14 @@ public class RoomServiceTest {
      */
     @Test
     public void testUpdateRoomAsAdmin() {
-        Room updatedRoom = new Room("UpdatedRoom1", RoomType.WORKSPACE);
-        when(roomRepository.findByName("Room1")).thenReturn(Optional.of(room1));
+        Room oldRoom = new Room("Room1", RoomType.WORKSPACE);
+        Room updatedRoom = new Room("Room1Updated", RoomType.MEETING_ROOM);
+
+        when(roomRepository.findByName("Room1")).thenReturn(Optional.of(oldRoom));
 
         roomService.updateRoom(adminUser, "Room1", updatedRoom);
 
-        verify(roomRepository, times(1)).delete(room1);
-        verify(roomRepository, times(1)).save(updatedRoom);
+        verify(roomRepository).update(oldRoom, updatedRoom);
     }
 
     /**
@@ -127,12 +127,11 @@ public class RoomServiceTest {
      */
     @Test
     public void testUpdateRoomAsNormalUser() {
-        Room updatedRoom = new Room("UpdatedRoom1", RoomType.WORKSPACE);
+        Room updatedRoom = new Room("Room1Updated", RoomType.MEETING_ROOM);
 
         roomService.updateRoom(normalUser, "Room1", updatedRoom);
 
-        verify(roomRepository, never()).delete(room1);
-        verify(roomRepository, never()).save(updatedRoom);
+        verify(roomRepository, never()).update(any(Room.class), any(Room.class));
     }
 
     /**

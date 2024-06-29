@@ -7,7 +7,8 @@ import com.sinaev.models.User;
 import com.sinaev.repositories.BookingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class BookingServiceTest {
@@ -30,12 +32,15 @@ public class BookingServiceTest {
     private Room room1;
     private Room room2;
 
-
+    /**
+     * Set up the test environment.
+     * This method is executed before each test.
+     */
     @BeforeEach
     public void setUp() {
         dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH");
-        bookingRepository = mock(BookingRepository.class);
-        bookingService = new BookingService(bookingRepository);
+        bookingRepository = Mockito.mock(BookingRepository.class);
+        bookingService = Mockito.spy(new BookingService(bookingRepository));
         adminUser = new User("admin", "adminpass", true);
         normalUser = new User("user1", "password", false);
         room1 = new Room("Room1", RoomType.MEETING_ROOM);
@@ -129,14 +134,24 @@ public class BookingServiceTest {
         LocalDateTime newStart = LocalDateTime.parse(newStartTime, dateFormatter);
         LocalDateTime newEnd = LocalDateTime.parse(newEndTime, dateFormatter);
 
-        Booking existingBooking = new Booking(normalUser, room1, originalStart, LocalDateTime.parse("2024-06-20T11", dateFormatter));
-        when(bookingRepository.findByRoomAndTime(originalStart, room1)).thenReturn(Optional.of(existingBooking));
-        when(bookingRepository.findByRoom(room1)).thenReturn(Collections.emptyList());
+        Booking booking = new Booking(normalUser, room1, originalStart, LocalDateTime.parse("2024-06-20T11", dateFormatter));
+        when(bookingRepository.findByRoomAndTime(originalStart, room1)).thenReturn(Optional.of(booking));
+        when(bookingService.isRoomAvailable(room2, newStart, newEnd)).thenReturn(true);
 
         bookingService.updateBooking(normalUser, room1, originalStartTime, room2, newStartTime, newEndTime);
 
-        assertThat(existingBooking.getStartTime()).isEqualTo(newStart);
-        assertThat(existingBooking.getEndTime()).isEqualTo(newEnd);
+        ArgumentCaptor<Booking> oldBookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        ArgumentCaptor<Booking> newBookingCaptor = ArgumentCaptor.forClass(Booking.class);
+
+        verify(bookingRepository, times(1)).update(oldBookingCaptor.capture(), newBookingCaptor.capture());
+
+        Booking capturedOldBooking = oldBookingCaptor.getValue();
+        Booking capturedNewBooking = newBookingCaptor.getValue();
+
+        assertThat(capturedOldBooking).isEqualTo(booking);
+        assertThat(capturedNewBooking.getStartTime()).isEqualTo(newStart);
+        assertThat(capturedNewBooking.getEndTime()).isEqualTo(newEnd);
+        assertThat(capturedNewBooking.getRoom()).isEqualTo(room2);
     }
 
     /**
@@ -158,13 +173,22 @@ public class BookingServiceTest {
 
         Booking booking = new Booking(adminUser, room1, originalStart, LocalDateTime.parse("2024-06-20T11", dateFormatter));
         when(bookingRepository.findByRoomAndTime(originalStart, room1)).thenReturn(Optional.of(booking));
+        when(bookingService.isRoomAvailable(room2, newStart, newEnd)).thenReturn(true);
 
         bookingService.updateBooking(adminUser, room1, originalStartTime, room2, newStartTime, newEndTime);
 
-        verify(bookingRepository, times(1)).findByRoomAndTime(originalStart, room1);
-        assertThat(booking.getStartTime()).isEqualTo(newStart);
-        assertThat(booking.getEndTime()).isEqualTo(newEnd);
-        assertThat(booking.getRoom()).isEqualTo(room2);
+        ArgumentCaptor<Booking> oldBookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        ArgumentCaptor<Booking> newBookingCaptor = ArgumentCaptor.forClass(Booking.class);
+
+        verify(bookingRepository, times(1)).update(oldBookingCaptor.capture(), newBookingCaptor.capture());
+
+        Booking capturedOldBooking = oldBookingCaptor.getValue();
+        Booking capturedNewBooking = newBookingCaptor.getValue();
+
+        assertThat(capturedOldBooking).isEqualTo(booking);
+        assertThat(capturedNewBooking.getStartTime()).isEqualTo(newStart);
+        assertThat(capturedNewBooking.getEndTime()).isEqualTo(newEnd);
+        assertThat(capturedNewBooking.getRoom()).isEqualTo(room2);
     }
 
     /**
@@ -181,7 +205,6 @@ public class BookingServiceTest {
         String newStartTime = "2024-06-20T12";
         String newEndTime = "2024-06-20T13";
         LocalDateTime originalStart = LocalDateTime.parse(originalStartTime, dateFormatter);
-
         when(bookingRepository.findByRoomAndTime(originalStart, room1)).thenReturn(Optional.empty());
 
         bookingService.updateBooking(normalUser, room1, originalStartTime, room2, newStartTime, newEndTime);
@@ -209,6 +232,7 @@ public class BookingServiceTest {
 
         verify(bookingRepository, times(1)).delete(existingBooking);
     }
+
     /**
      * Tests the deletion of a booking by the booking creator.
      * Steps:

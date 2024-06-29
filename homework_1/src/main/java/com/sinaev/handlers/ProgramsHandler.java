@@ -11,6 +11,9 @@ import com.sinaev.repositories.UserRepository;
 import com.sinaev.services.BookingService;
 import com.sinaev.services.RoomService;
 import com.sinaev.services.UserService;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,15 +28,33 @@ import java.util.Scanner;
  * This class handles the overall program flow, including user authentication, room management, and booking management.
  * It initializes the required repositories and services and provides a set of commands for interaction.
  */
+@Getter
 public class ProgramsHandler {
-    User currentUser;
-    UserRepository userRepository = new UserRepository();
-    RoomRepository roomRepository = new RoomRepository();
-    BookingRepository bookingRepository = new BookingRepository();
+    private final String urlDB;
+    private final String usernameDB;
+    private final String passwordDB;
 
-    UserService userService = new UserService(userRepository);
-    RoomService roomService = new RoomService(roomRepository);
-    BookingService bookingService = new BookingService(bookingRepository);
+    private final UserRepository userRepository;
+    private final RoomRepository roomRepository;
+    private final BookingRepository bookingRepository;
+
+    private final UserService userService;
+    private final RoomService roomService;
+    private final BookingService bookingService;
+
+    public ProgramsHandler(String urlDB, String usernameDB, String passwordDB) {
+        this.urlDB = urlDB;
+        this.usernameDB = usernameDB;
+        this.passwordDB = passwordDB;
+        this.userRepository = new UserRepository(urlDB, usernameDB, passwordDB);
+        this.roomRepository = new RoomRepository(urlDB, usernameDB, passwordDB);
+        this.bookingRepository = new BookingRepository(urlDB, usernameDB, passwordDB);
+        this.userService = new UserService(userRepository);
+        this.roomService = new RoomService(roomRepository);
+        this.bookingService = new BookingService(bookingRepository);
+    }
+
+    User currentUser;
     Scanner scanner = new Scanner(System.in);
 
     /**
@@ -49,28 +70,6 @@ public class ProgramsHandler {
         addOtherCommands(commands);
 
         return commands;
-    }
-
-    /**
-     * Uploads initial data for demonstration purposes. Registers an admin user and creates some initial rooms and bookings.
-     */
-    public void uploadInitData() {
-        User admin = new User("admin", "admin", true);
-        Room room1 = new Room("first", RoomType.MEETING_ROOM);
-        Room room2 = new Room("second", RoomType.WORKSPACE);
-        Room room3 = new Room("third", RoomType.MEETING_ROOM);
-
-        System.out.println(ConstantValues.GREEN + "Uploading initial data for demonstration of functionality" + ConstantValues.RESET);
-
-        userService.register(admin);
-        roomService.createRoom(admin, room1);
-        roomService.createRoom(admin, room2);
-        roomService.createRoom(admin, room3);
-
-        bookingService.createBooking(admin, room1, "2023-06-18T15", "2023-06-18T18");
-        bookingService.createBooking(admin, room1, "2023-06-17T19", "2023-06-17T20");
-
-        System.out.println(ConstantValues.GREEN + "Upload complete" + ConstantValues.RESET);
     }
 
     /**
@@ -200,7 +199,7 @@ public class ProgramsHandler {
                 return;
             }
             System.out.print("Enter room name: ");
-            String resourceName = scanner.nextLine();
+            String roomName = scanner.nextLine();
             System.out.print("Enter room type. Choose digit: \n1 - WORKSPACE, 2 - MEETING_ROOM: ");
             int typeInput;
             try {
@@ -209,7 +208,6 @@ public class ProgramsHandler {
                 System.out.println("Invalid input. Please enter a number.");
                 return;
             }
-
             RoomType roomType;
             switch (typeInput) {
                 case 1 -> roomType = RoomType.WORKSPACE;
@@ -219,9 +217,7 @@ public class ProgramsHandler {
                     return;
                 }
             }
-
-
-            Room room = new Room(resourceName, roomType);
+            Room room = new Room(roomName, roomType);
             roomService.createRoom(currentUser, room);
         });
     }
