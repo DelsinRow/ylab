@@ -11,8 +11,11 @@ import java.time.LocalDateTime;
  */
 @Getter
 @Setter
-@AllArgsConstructor
 public class Booking {
+    /**
+     * The id of the booking.
+     */
+    private Long id;
     /**
      * The user who made the booking.
      */
@@ -32,6 +35,21 @@ public class Booking {
      * The end time of the booking.
      */
     private LocalDateTime endTime;
+
+    /**
+     * Constructs a Booking with the specified user, room, start time, and end time.
+     *
+     * @param user      the user who made the booking
+     * @param room      the room that is booked
+     * @param startTime the start time of the booking
+     * @param endTime   the end time of the booking
+     */
+    public Booking(User user, Room room, LocalDateTime startTime, LocalDateTime endTime) {
+        this.user = user;
+        this.room = room;
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
 
     /**
      * Returns a string representation of the booking.

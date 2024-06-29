@@ -13,12 +13,12 @@ public enum RoomType {
     /**
      * A workspace type room.
      */
-    WORKSPACE("workspace"),
+    WORKSPACE("WORKSPACE"),
 
     /**
      * A meeting room type room.
      */
-    MEETING_ROOM("meeting room");
+    MEETING_ROOM("MEETING_ROOM");
 
     /**
      * The type of the room.

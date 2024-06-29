@@ -34,6 +34,7 @@ public class UserService {
             if (isAdmin(username)) {
                 user.setAdmin(true);
             }
+            user.setLoggedIn(true);
             System.out.println("User: '" + user.getUsername() + "' successfully logged in");
             return user;
         } else {

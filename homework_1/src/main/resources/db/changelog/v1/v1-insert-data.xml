@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.5.xsd">
+    <property name="entitySchemaName" value="entity_schema"/>
+
+    <changeSet id="v1-insert-data" author="sinaev">
+        <insert schemaName="${entitySchemaName}" tableName="users">
+            <column name="id" value="1"/>
+            <column name="username" value="admin"/>
+            <column name="password" value="admin"/>
+            <column name="is_admin" value="true"/>
+        </insert>
+        <insert schemaName="${entitySchemaName}" tableName="users">
+            <column name="id" value="2"/>
+            <column name="username" value="user"/>
+            <column name="password" value="user"/>
+            <column name="is_admin" value="false"/>
+        </insert>
+        <insert schemaName="${entitySchemaName}" tableName="rooms">
+            <column name="id" value="1"/>
+            <column name="room_name" value="first"/>
+            <column name="room_type" value='WORKSPACE'/>
+        </insert>
+        <insert schemaName="${entitySchemaName}" tableName="rooms">
+            <column name="id" value="2"/>
+            <column name="room_name" value="second"/>
+            <column name="room_type" value='WORKSPACE'/>
+        </insert>
+        <insert schemaName="${entitySchemaName}" tableName="rooms">
+            <column name="id" value="3"/>
+            <column name="room_name" value="third"/>
+            <column name="room_type" value='WORKSPACE'/>
+        </insert>
+        <insert schemaName="${entitySchemaName}" tableName="bookings">
+            <column name="user_id" value="1"/>
+            <column name="room_id" value='1'/>
+            <column name="start_time" value='2024-10-11T10:00:00'/>
+            <column name="end_time" value='2024-10-11T20:00:00'/>
+        </insert>
+        <insert schemaName="${entitySchemaName}" tableName="bookings">
+            <column name="user_id" value="2"/>
+            <column name="room_id" value='1'/>
+            <column name="start_time" value='2024-10-11T22:00:00'/>
+            <column name="end_time" value='2024-10-11T23:00:00'/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

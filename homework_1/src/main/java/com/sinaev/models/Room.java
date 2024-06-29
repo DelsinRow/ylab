@@ -9,8 +9,11 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-@AllArgsConstructor
 public class Room {
+    /**
+     * The id of the room.
+     */
+    private Long id;
     /**
      * The name of the room.
      */
@@ -20,4 +23,9 @@ public class Room {
      * The type of the room.
      */
     private RoomType type;
+
+    public Room(String name, RoomType type) {
+        this.name = name;
+        this.type = type;
+    }
 }
