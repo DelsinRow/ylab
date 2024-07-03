@@ -76,13 +76,14 @@ public class BookingService {
     }
 
     /**
-     * Updates an existing booking if it exists and if the user is the one who created the booking.
+     * Updates an existing booking with new details.
      *
-     * @param user              the user making the booking
+     * @param user              the user attempting to update the booking
+     * @param room              the current room of the booking
      * @param originalStartTime the original start time of the booking in the format "yyyy-MM-dd'T'HH"
+     * @param newRoom           the new room for the booking
      * @param newStartTime      the new start time of the booking in the format "yyyy-MM-dd'T'HH"
      * @param newEndTime        the new end time of the booking in the format "yyyy-MM-dd'T'HH"
-     * @param room              the booked room
      */
     public void updateBooking(User user, Room room, String originalStartTime, Room newRoom, String newStartTime, String newEndTime) {
         LocalDateTime originalStart = LocalDateTime.parse(originalStartTime, dateFormatter);
@@ -102,15 +103,12 @@ public class BookingService {
             System.out.println("You are not authorized to update this booking.");
             return;
         }
-
         if (!isRoomAvailable(newRoom, newStart, newEnd)) {
             System.out.println("The new time or room is not available. Try another time or resource.");
             return;
         }
-
-        booking.setStartTime(newStart);
-        booking.setEndTime(newEnd);
-        booking.setRoom(newRoom);
+        Booking newBooking = new Booking(user,newRoom,newStart,newEnd);
+        bookingRepository.update(booking, newBooking);
         System.out.println("Booking has been updated.");
     }
 
@@ -167,8 +165,9 @@ public class BookingService {
      * @param endTime   the end time of the interval
      * @return true if the room is available in the specified time interval, false otherwise
      */
-    private boolean isRoomAvailable(Room room, LocalDateTime startTime, LocalDateTime endTime) {
+    boolean isRoomAvailable(Room room, LocalDateTime startTime, LocalDateTime endTime) {
         return bookingRepository.findByRoom(room).stream()
                 .allMatch(booking -> booking.getEndTime().isBefore(startTime) || booking.getStartTime().isAfter(endTime));
     }
+
 }

@@ -29,15 +29,16 @@ public class RoomService {
      * @param room the room to be created
      */
     public void createRoom(User user, Room room) {
-        if (user.isAdmin()) {
+        if (!user.isAdmin()) {
+            System.out.println("You do not have admin user access");
+        } else {
             if (!roomRepository.exists(room)) {
                 roomRepository.save(room);
                 System.out.println("Room: '" + room.getName() + "' successfully created");
             } else {
                 System.out.println("Room with name '" + room.getName() + "' already exists");
             }
-        } else {
-            System.out.println("You do not have admin user access");
+
         }
     }
 
@@ -61,12 +62,8 @@ public class RoomService {
         if (user.isAdmin()) {
             Optional<Room> optionalRoom = roomRepository.findByName(roomName);
             if (optionalRoom.isPresent()) {
-                Room room = optionalRoom.get();
-                roomRepository.delete(room);
-                roomRepository.save(updatedRoom);
-                System.out.println("Room '" + roomName + "' successfully updated");
-            } else {
-                System.out.println("Room not found");
+                Room oldRoom = optionalRoom.get();
+                roomRepository.update(oldRoom, updatedRoom);
             }
         } else {
             System.out.println("You do not have admin user access");

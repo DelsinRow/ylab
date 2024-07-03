@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.5.xsd">
+    <property name="entitySchemaName" value="entity_schema" dbms="postgresql"/>
+
+    <changeSet id="v1-create-table" author="sinaev">
+<!--        <sql>CREATE SCHEMA ${entitySchemaName};</sql>-->
+        <sql>
+            SET search_path TO ${entitySchemaName}, public;
+        </sql>
+        <sql>CREATE TYPE roomtype AS ENUM ('WORKSPACE', 'MEETING_ROOM');</sql>
+        <createSequence schemaName="${entitySchemaName}" sequenceName="user_id_seq" startValue="3" incrementBy="1"/>
+        <createSequence schemaName="${entitySchemaName}" sequenceName="room_id_seq" startValue="4" incrementBy="1"/>
+        <createSequence schemaName="${entitySchemaName}" sequenceName="booking_id_seq" startValue="3" incrementBy="1"/>
+
+        <createTable schemaName="${entitySchemaName}" tableName="users">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="password" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_logged_in" type="BOOLEAN">
+            </column>
+            <column name="is_admin" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createTable schemaName="${entitySchemaName}" tableName="rooms">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="room_name" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="room_type" type="roomtype">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createTable schemaName="${entitySchemaName}" tableName="bookings">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="room_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="start_time" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_time" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addDefaultValue schemaName="${entitySchemaName}" tableName="users" columnName="id" defaultValueSequenceNext="user_id_seq"/>
+        <addDefaultValue schemaName="${entitySchemaName}" tableName="rooms" columnName="id" defaultValueSequenceNext="room_id_seq"/>
+        <addDefaultValue schemaName="${entitySchemaName}" tableName="bookings" columnName="id" defaultValueSequenceNext="booking_id_seq"/>
+
+        <addForeignKeyConstraint baseTableSchemaName="${entitySchemaName}"
+                                 constraintName="fk_booking_user"
+                                 baseTableName="bookings" baseColumnNames="user_id"
+                                 referencedTableSchemaName="${entitySchemaName}"
+                                 referencedTableName="users" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableSchemaName="${entitySchemaName}"
+                                 constraintName="fk_booking_room"
+                                 baseTableName="bookings" baseColumnNames="room_id"
+                                 referencedTableSchemaName="${entitySchemaName}"
+                                 referencedTableName="rooms" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+</databaseChangeLog>

@@ -1,64 +1,196 @@
 package com.sinaev.repositories;
 
+import com.sinaev.handlers.SQLQueryHandler;
 import com.sinaev.models.Room;
+import com.sinaev.models.RoomType;
+import lombok.RequiredArgsConstructor;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Repository for managing rooms.
  */
+@RequiredArgsConstructor
 public class RoomRepository {
-    private final List<Room> rooms = new ArrayList<>();
+    private final String urlDB;
+    private final String userDB;
+    private final String passwordDB;
 
     /**
-     * Finds all rooms in the repository.
+     * Finds all rooms in the database.
      *
      * @return a list of all rooms
      */
     public List<Room> findAll() {
-        return new ArrayList<>(rooms);
+        List<Room> rooms = new ArrayList<>();
+        String findAllSQL = "SELECT * FROM rooms";
+
+        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+             PreparedStatement preparedStatement = connection.prepareStatement(findAllSQL)) {
+
+            changeSearchPath(connection);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                String name = resultSet.getString("room_name");
+                RoomType roomType = RoomType.valueOf(resultSet.getString("room_type"));
+                Room room = new Room(name, roomType);
+                rooms.add(room);
+            }
+        } catch (SQLException e) {
+            System.out.println("Got SQL Exception " + e.getMessage());
+        }
+        return rooms;
     }
 
     /**
      * Finds a room by its name.
      *
-     * @param roomName the name of the room to search for
-     * @return an Optional containing the found room, or an empty Optional if no room was found
+     * @param roomName the name of the room to find
+     * @return an Optional containing the found room, or an empty Optional if no room is found
      */
     public Optional<Room> findByName(String roomName) {
-        return rooms.stream()
-                .filter(room -> room.getName().equals(roomName))
-                .findFirst();
+        String selectSQL = "SELECT * FROM rooms WHERE room_name = ?";
+        Room foundRoom = null;
+
+        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+             PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
+
+            changeSearchPath(connection);
+
+            preparedStatement.setString(1, roomName);
+
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    foundRoom = new Room(
+                            resultSet.getString("room_name"),
+                            RoomType.valueOf(resultSet.getString("room_type")));
+                }
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Got SQL Exception " + e.getMessage());
+        }
+        return Optional.ofNullable(foundRoom);
     }
+
     /**
-     * Saves a new room to the repository.
+     * Updates an existing room in the database.
+     *
+     * @param oldRoom the old room to update
+     * @param newRoom the new room data
+     */
+    public void update(Room oldRoom, Room newRoom) {
+        String updateSQL = "UPDATE rooms SET room_name = ?, room_type = ?::roomtype WHERE room_name = ?";
+
+        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+             PreparedStatement preparedStatement = connection.prepareStatement(updateSQL)) {
+
+            changeSearchPath(connection);
+
+            preparedStatement.setString(1, newRoom.getName());
+            preparedStatement.setString(2, newRoom.getType().name());
+            preparedStatement.setString(3, oldRoom.getName());
+
+            int affectedRows = preparedStatement.executeUpdate();
+            if (affectedRows > 0) {
+                System.out.println("Room " + oldRoom.getName() + " updated successfully.");
+            } else {
+                System.out.println("No room found with the specified name.");
+            }
+        } catch (SQLException e) {
+            System.out.println("Got SQL Exception " + e.getMessage());
+        }
+    }
+
+    /**
+     * Saves a new room to the database.
      *
      * @param room the room to save
      */
     public void save(Room room) {
-        rooms.add(room);
+        String saveSQL = "INSERT INTO rooms(room_name, room_type) VALUES (?, ?::roomtype)";
+
+        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+             PreparedStatement preparedStatement = connection.prepareStatement(saveSQL)) {
+
+            changeSearchPath(connection);
+
+            System.out.println("room name: " + room.getName() + ", type: " + room.getType().getType());
+            preparedStatement.setString(1, room.getName());
+            preparedStatement.setString(2, room.getType().getType());
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Got SQL Exception " + e.getMessage());
+        }
     }
 
     /**
-     * Deletes a room from the repository.
+     * Deletes a room from the database.
      *
      * @param room the room to delete
      */
     public void delete(Room room) {
-        rooms.remove(room);
+        String roomName = room.getName();
+        String deleteSQL = "DELETE FROM rooms WHERE room_name = ?";
+
+        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+             PreparedStatement preparedStatement = connection.prepareStatement(deleteSQL)) {
+
+            changeSearchPath(connection);
+
+            preparedStatement.setString(1, roomName);
+            int affectedRows = preparedStatement.executeUpdate();
+
+            if (affectedRows > 0) {
+                System.out.println("Room deleted successfully.");
+            } else {
+                System.out.println("Room not found.");
+            }
+        } catch (SQLException e) {
+            System.out.println("Got SQL Exception " + e.getMessage());
+        }
     }
 
     /**
-     * Checks if a room already exists in the repository.
+     * Checks if a room exists in the database.
      *
      * @param room the room to check
      * @return true if the room exists, false otherwise
      */
     public boolean exists(Room room) {
-        return rooms.stream()
-                .anyMatch(existingRoom -> existingRoom.getName().equals(room.getName()));
+        String roomName = room.getName();
+        String selectSQL = "SELECT * FROM rooms WHERE room_name = ?";
+
+        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+             PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
+
+            changeSearchPath(connection);
+
+            preparedStatement.setString(1, roomName);
+
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                return resultSet.next();
+            }
+        } catch (SQLException e) {
+            System.out.println("Got SQL Exception " + e.getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * Changes the search path to the specified schema.
+     *
+     * @param connection the database connection to use
+     */
+    void changeSearchPath(Connection connection) {
+        SQLQueryHandler handler = new SQLQueryHandler();
+        handler.addSearchPathPrivate(connection);
     }
 }
