@@ -1,7 +1,7 @@
 package com.sinaev.repositories;
 
 import com.sinaev.handlers.SQLQueryHandler;
-import com.sinaev.models.User;
+import com.sinaev.models.entities.User;
 import lombok.RequiredArgsConstructor;
 
 import java.sql.Connection;
@@ -101,7 +101,7 @@ public class UserRepository {
      *
      * @param connection the database connection to use
      */
-    void changeSearchPath(Connection connection) {
+    protected void changeSearchPath(Connection connection) {
         SQLQueryHandler handler = new SQLQueryHandler();
         handler.addSearchPathPrivate(connection);
     }

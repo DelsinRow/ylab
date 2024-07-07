@@ -1,14 +1,16 @@
 package com.sinaev.services;
 
-import com.sinaev.models.User;
+import com.sinaev.models.dto.UserDTO;
+import com.sinaev.models.entities.User;
 import com.sinaev.repositories.UserRepository;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 public class UserServiceTest {
@@ -22,132 +24,92 @@ public class UserServiceTest {
         userService = new UserService(userRepository);
     }
 
-    /**
-     * Tests the successful registration of a new user.
-     * Steps:
-     * 1. Create a new user.
-     * 2. Mock the repository to return false for username existence.
-     * 3. Call the register method.
-     * 4. Verify that the user is saved in the repository.
-     * 5. Check that the user can be found in the repository.
-     * Expected result: The user is registered and saved in the repository.
-     */
     @Test
+    @DisplayName("Should register new user successfully")
     public void testRegisterUser() {
-        User user = new User("user1", "password", false);
+        UserDTO userDTO = new UserDTO("user1", "password", false);
+        User user = new User("user1", "password");
 
-        when(userRepository.existsByUsername(user.getUsername())).thenReturn(false);
+        when(userRepository.existsByUsername(userDTO.username())).thenReturn(false);
 
-        userService.register(user);
+        boolean isRegistered = userService.register(userDTO);
 
-        verify(userRepository, times(1)).save(user);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(isRegistered).isTrue();
+        verify(userRepository, times(1)).save(any(User.class));
         when(userRepository.findByUsername("user1")).thenReturn(Optional.of(user));
-        assertThat(userRepository.findByUsername("user1")).isPresent();
+        softly.assertThat(userRepository.findByUsername("user1")).isPresent();
+        softly.assertAll();
     }
 
-    /**
-     * Tests the registration of a user with an already taken username.
-     * Steps:
-     * 1. Create a new user.
-     * 2. Mock the repository to return true for username existence.
-     * 3. Call the register method.
-     * 4. Verify that the user is not saved in the repository.
-     * 5. Check that the user cannot be found in the repository.
-     * Expected result: The user is not registered and not saved in the repository.
-     */
     @Test
+    @DisplayName("Should not register user with taken username")
     public void testRegisterUserWithTakenUsername() {
-        User user = new User("user1", "password", false);
+        UserDTO userDTO = new UserDTO("user1", "password", false);
 
-        when(userRepository.existsByUsername(user.getUsername())).thenReturn(true);
+        when(userRepository.existsByUsername(userDTO.username())).thenReturn(true);
 
-        userService.register(user);
+        boolean isRegistered = userService.register(userDTO);
 
-        verify(userRepository, never()).save(user);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(isRegistered).isFalse();
+        verify(userRepository, never()).save(any(User.class));
         when(userRepository.findByUsername("user1")).thenReturn(Optional.empty());
-        assertThat(userRepository.findByUsername("user1")).isNotPresent();
+        softly.assertThat(userRepository.findByUsername("user1")).isNotPresent();
+        softly.assertAll();
     }
 
-    /**
-     * Tests the successful login of a registered user.
-     * Steps:
-     * 1. Create a new user and register them.
-     * 2. Mock the repository to return the user.
-     * 3. Call the login method.
-     * 4. Verify the user's login status and username.
-     * 5. Verify repository interactions.
-     * Expected result: The user is logged in and their status is updated.
-     */
     @Test
+    @DisplayName("Should login user successfully")
     public void testLoginUser() {
         User user = new User("user1", "password", false);
+        UserDTO userDTO = new UserDTO("user1", "password", false);
 
-        when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
+        when(userRepository.findByUsername(userDTO.username())).thenReturn(Optional.of(user));
 
-        User loggedInUser = userService.login("user1", "password");
+        Optional<UserDTO> loggedInUserDTO = userService.login(userDTO);
 
-        assertThat(loggedInUser.isLoggedIn()).isTrue();
-        assertThat(loggedInUser.getUsername()).isEqualTo("user1");
-        verify(userRepository, times(2)).findByUsername("user1");
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(loggedInUserDTO).isPresent();
+        softly.assertThat(loggedInUserDTO.get().username()).isEqualTo("user1");
+        softly.assertAll();
     }
 
-    /**
-     * Tests the login attempt with an incorrect password.
-     * Steps:
-     * 1. Create a new user and register them.
-     * 2. Mock the repository to return the user.
-     * 3. Call the login method with the wrong password.
-     * 4. Verify the user's login status.
-     * 5. Verify repository interactions.
-     * Expected result: The user is not logged in.
-     */
     @Test
+    @DisplayName("Should not login user with wrong password")
     public void testLoginUserWithWrongPassword() {
         User user = new User("user1", "password", false);
+        UserDTO userDTO = new UserDTO("user1", "wrongpassword", false);
 
-        when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
+        when(userRepository.findByUsername(userDTO.username())).thenReturn(Optional.of(user));
 
-        User loggedInUser = userService.login("user1", "wrongpassword");
+        Optional<UserDTO> loggedInUserDTO = userService.login(userDTO);
 
-        assertThat(loggedInUser.isLoggedIn()).isFalse();
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(loggedInUserDTO).isNotPresent();
         verify(userRepository, times(1)).findByUsername("user1");
+        softly.assertAll();
     }
 
-    /**
-     * Tests the successful login of an admin user.
-     * Steps:
-     * 1. Create a new admin user and register them.
-     * 2. Mock the repository to return the admin user.
-     * 3. Call the login method.
-     * 4. Verify the user's login status, admin status, and username.
-     * 5. Verify repository interactions.
-     * Expected result: The admin user is logged in and their status is updated.
-     */
     @Test
+    @DisplayName("Should login admin user successfully")
     public void testLoginAdminUser() {
         User adminUser = new User("admin", "adminpass", true);
+        UserDTO adminUserDTO = new UserDTO("admin", "adminpass", true);
 
-        when(userRepository.findByUsername(adminUser.getUsername())).thenReturn(Optional.of(adminUser));
+        when(userRepository.findByUsername(adminUserDTO.username())).thenReturn(Optional.of(adminUser));
 
-        User loggedInAdmin = userService.login("admin", "adminpass");
+        Optional<UserDTO> loggedInAdminDTO = userService.login(adminUserDTO);
 
-        assertThat(loggedInAdmin.isLoggedIn()).isTrue();
-        assertThat(loggedInAdmin.isAdmin()).isTrue();
-        assertThat(loggedInAdmin.getUsername()).isEqualTo("admin");
-        verify(userRepository, times(2)).findByUsername("admin");
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(loggedInAdminDTO).isPresent();
+        softly.assertThat(loggedInAdminDTO.get().username()).isEqualTo("admin");
+        softly.assertThat(loggedInAdminDTO.get().admin()).isTrue();
+        softly.assertAll();
     }
 
-    /**
-     * Tests the retrieval of a user by their username.
-     * Steps:
-     * 1. Create a new user and register them.
-     * 2. Mock the repository to return the user.
-     * 3. Call the getUserByUsername method.
-     * 4. Verify the user is found and their username matches.
-     * 5. Verify repository interactions.
-     * Expected result: The user is found in the repository.
-     */
     @Test
+    @DisplayName("Should retrieve user by username")
     public void testGetUserByUsername() {
         User user = new User("user1", "password", false);
 
@@ -155,27 +117,23 @@ public class UserServiceTest {
 
         Optional<User> foundUser = userService.getUserByUsername("user1");
 
-        assertThat(foundUser).isPresent();
-        assertThat(foundUser.get().getUsername()).isEqualTo("user1");
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(foundUser).isPresent();
+        softly.assertThat(foundUser.get().getUsername()).isEqualTo("user1");
         verify(userRepository, times(1)).findByUsername("user1");
+        softly.assertAll();
     }
 
-    /**
-     * Tests the retrieval of a non-existing user by their username.
-     * Steps:
-     * 1. Mock the repository to return empty for a non-existing user.
-     * 2. Call the getUserByUsername method.
-     * 3. Verify the user is not found.
-     * 4. Verify repository interactions.
-     * Expected result: The user is not found in the repository.
-     */
     @Test
+    @DisplayName("Should not retrieve non-existing user by username")
     public void testGetNonExistingUserByUsername() {
         when(userRepository.findByUsername("nonexisting")).thenReturn(Optional.empty());
 
         Optional<User> foundUser = userService.getUserByUsername("nonexisting");
 
-        assertThat(foundUser).isNotPresent();
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(foundUser).isNotPresent();
         verify(userRepository, times(1)).findByUsername("nonexisting");
+        softly.assertAll();
     }
 }

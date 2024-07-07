@@ -1,8 +1,8 @@
 package com.sinaev.repositories;
 
 import com.sinaev.handlers.SQLQueryHandler;
-import com.sinaev.models.Room;
-import com.sinaev.models.RoomType;
+import com.sinaev.models.entities.Room;
+import com.sinaev.models.enums.RoomType;
 import lombok.RequiredArgsConstructor;
 
 import java.sql.Connection;
@@ -122,7 +122,7 @@ public class RoomRepository {
 
             changeSearchPath(connection);
 
-            System.out.println("room name: " + room.getName() + ", type: " + room.getType().getType());
+            System.out.println("room name: " + room.getName() + ", type: " + room.getType().getType() + " saved");
             preparedStatement.setString(1, room.getName());
             preparedStatement.setString(2, room.getType().getType());
             preparedStatement.executeUpdate();
@@ -149,7 +149,7 @@ public class RoomRepository {
             int affectedRows = preparedStatement.executeUpdate();
 
             if (affectedRows > 0) {
-                System.out.println("Room deleted successfully.");
+                System.out.println("Room " + roomName + " deleted successfully.");
             } else {
                 System.out.println("Room not found.");
             }
@@ -161,11 +161,10 @@ public class RoomRepository {
     /**
      * Checks if a room exists in the database.
      *
-     * @param room the room to check
+     * @param roomName the name of room to check
      * @return true if the room exists, false otherwise
      */
-    public boolean exists(Room room) {
-        String roomName = room.getName();
+    public boolean exists(String roomName) {
         String selectSQL = "SELECT * FROM rooms WHERE room_name = ?";
 
         try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
@@ -189,7 +188,7 @@ public class RoomRepository {
      *
      * @param connection the database connection to use
      */
-    void changeSearchPath(Connection connection) {
+    protected void changeSearchPath(Connection connection) {
         SQLQueryHandler handler = new SQLQueryHandler();
         handler.addSearchPathPrivate(connection);
     }

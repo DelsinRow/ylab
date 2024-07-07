@@ -1,9 +1,11 @@
 package com.sinaev.repositories;
 
-import com.sinaev.models.User;
+import com.sinaev.models.entities.User;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -16,7 +18,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 
@@ -93,76 +94,59 @@ public class UserRepositoryTest {
         }
     }
 
-    /**
-     * Test the method findByUsername in UserRepository.
-     * Steps:
-     * 1. Create a user.
-     * 2. Save the user to the database using UserRepository.
-     * 3. Retrieve the user by username using UserRepository.
-     * 4. Verify that the retrieved user matches the saved user.
-     */
+
     @Test
+    @DisplayName("Should find user by username")
     public void testFindByUsername() {
         User user = new User("testUser", "testPass", true);
         userRepository.save(user);
 
         Optional<User> foundUser = userRepository.findByUsername("testUser");
 
-        assertThat(foundUser).isPresent();
-        assertThat(foundUser.get().getUsername()).isEqualTo("testUser");
-        assertThat(foundUser.get().getPassword()).isEqualTo("testPass");
-        assertThat(foundUser.get().isAdmin()).isTrue();
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(foundUser).isPresent();
+        softly.assertThat(foundUser.get().getUsername()).isEqualTo("testUser");
+        softly.assertThat(foundUser.get().getPassword()).isEqualTo("testPass");
+        softly.assertThat(foundUser.get().isAdmin()).isTrue();
+        softly.assertAll();
     }
 
-    /**
-     * Test the method save in UserRepository.
-     * Steps:
-     * 1. Create a user.
-     * 2. Save the user to the database using UserRepository.
-     * 3. Retrieve the user by username using UserRepository.
-     * 4. Verify that the retrieved user matches the saved user.
-     */
     @Test
+    @DisplayName("Should save user")
     public void testSave() {
         User user = new User("testUser", "testPass", true);
         userRepository.save(user);
 
         Optional<User> foundUser = userRepository.findByUsername("testUser");
 
-        assertThat(foundUser).isPresent();
-        assertThat(foundUser.get().getUsername()).isEqualTo("testUser");
-        assertThat(foundUser.get().getPassword()).isEqualTo("testPass");
-        assertThat(foundUser.get().isAdmin()).isTrue();
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(foundUser).isPresent();
+        softly.assertThat(foundUser.get().getUsername()).isEqualTo("testUser");
+        softly.assertThat(foundUser.get().getPassword()).isEqualTo("testPass");
+        softly.assertThat(foundUser.get().isAdmin()).isTrue();
+        softly.assertAll();
     }
 
-    /**
-     * Test the method existsByUsername in UserRepository.
-     * Steps:
-     * 1. Create a user.
-     * 2. Save the user to the database using UserRepository.
-     * 3. Check if the user exists by username using UserRepository.
-     * 4. Verify that the user exists.
-     */
     @Test
+    @DisplayName("Should check if username exists")
     public void testExistsByUsername() {
         User user = new User("testUser", "testPass", true);
         userRepository.save(user);
 
         boolean exists = userRepository.existsByUsername("testUser");
 
-        assertThat(exists).isTrue();
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(exists).isTrue();
+        softly.assertAll();
     }
 
-    /**
-     * Test the method findByUsername in UserRepository for a non-existing user.
-     * Steps:
-     * 1. Attempt to retrieve a user by a non-existing username using UserRepository.
-     * 2. Verify that the retrieved user is not present.
-     */
     @Test
+    @DisplayName("Should not find non-existing user by username")
     public void testNonExistingUser() {
         Optional<User> foundUser = userRepository.findByUsername("nonExistingUser");
 
-        assertThat(foundUser).isNotPresent();
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(foundUser).isNotPresent();
+        softly.assertAll();
     }
 }

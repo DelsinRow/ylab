@@ -24,6 +24,14 @@ public class MyLiquibaseRunner {
     private final String databaseChangeLogTableName;
     private final String databaseChangeLogLockTableName;
 
+    static {
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Failed to load PostgreSQL driver", e);
+        }
+    }
+
     /**
      * Runs the Liquibase update command.
      */

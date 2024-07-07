@@ -1,202 +1,141 @@
 package com.sinaev.services;
 
-import com.sinaev.models.Room;
-import com.sinaev.models.RoomType;
-import com.sinaev.models.User;
+import com.sinaev.mappers.RoomMapper;
+import com.sinaev.models.dto.RoomDTO;
+import com.sinaev.models.dto.UserDTO;
+import com.sinaev.models.entities.Room;
 import com.sinaev.repositories.RoomRepository;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-public class RoomServiceTest {
+class RoomServiceTest {
 
     private RoomService roomService;
     private RoomRepository roomRepository;
-    private User adminUser;
-    private User normalUser;
-    private Room room1;
+    private UserDTO adminUserDTO;
+    private UserDTO normalUserDTO;
+    private RoomDTO roomDTO;
+    private Room room;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         roomRepository = mock(RoomRepository.class);
         roomService = new RoomService(roomRepository);
-        adminUser = new User("admin", "adminpass", true);
-        normalUser = new User("user1", "password", false);
-        room1 = new Room("Room1", RoomType.MEETING_ROOM);
+        adminUserDTO = new UserDTO("admin", "adminpass", true);
+        normalUserDTO = new UserDTO("user1", "password", false);
+        roomDTO = new RoomDTO("Room1", "MEETING_ROOM");
+        room = RoomMapper.INSTANCE.toEntity(roomDTO);
     }
 
-    /**
-     * Tests the creation of a room by an admin user.
-     * Steps:
-     * 1. Mock the repository to return false for room existence.
-     * 2. Call the createRoom method.
-     * 3. Verify that the room is saved in the repository.
-     * Expected result: The room is created and saved in the repository.
-     */
     @Test
-    public void testCreateRoomAsAdmin() {
-        when(roomRepository.exists(room1)).thenReturn(false);
+    @DisplayName("Should create room by admin user")
+    void testCreateRoomAsAdmin() {
+        when(roomRepository.exists(roomDTO.name())).thenReturn(false);
 
-        roomService.createRoom(adminUser, room1);
+        Optional<RoomDTO> createdRoom = roomService.createRoom(adminUserDTO, roomDTO);
 
-        verify(roomRepository, times(1)).save(room1);
-        verify(roomRepository, times(1)).exists(room1);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(createdRoom).isPresent();
+        verify(roomRepository, times(1)).save(any(Room.class));
+        softly.assertAll();
     }
 
-    /**
-     * Tests the creation of a room by a normal user.
-     * Steps:
-     * 1. Call the createRoom method.
-     * 2. Verify that the room is not saved in the repository.
-     * Expected result: The room is not created and not saved in the repository.
-     */
     @Test
-    public void testCreateRoomAsNormalUser() {
-        roomService.createRoom(normalUser, room1);
+    @DisplayName("Should not create room by normal user")
+    void testCreateRoomAsNormalUser() {
+        Optional<RoomDTO> createdRoom = roomService.createRoom(normalUserDTO, roomDTO);
 
-        verify(roomRepository, never()).save(room1);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(createdRoom).isNotPresent();
+        verify(roomRepository, never()).save(any(Room.class));
+        softly.assertAll();
     }
 
-    /**
-     * Tests the creation of a room that already exists.
-     * Steps:
-     * 1. Mock the repository to return true for room existence.
-     * 2. Call the createRoom method.
-     * 3. Verify that the room is not saved in the repository.
-     * Expected result: The room is not created and not saved in the repository.
-     */
     @Test
-    public void testCreateRoomThatAlreadyExists() {
-        when(roomRepository.exists(room1)).thenReturn(true);
+    @DisplayName("Should not create room if it already exists")
+    void testCreateRoomThatAlreadyExists() {
+        when(roomRepository.exists(roomDTO.name())).thenReturn(true);
 
-        roomService.createRoom(adminUser, room1);
+        Optional<RoomDTO> createdRoom = roomService.createRoom(adminUserDTO, roomDTO);
 
-        verify(roomRepository, never()).save(room1);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(createdRoom).isNotPresent();
+        verify(roomRepository, never()).save(any(Room.class));
+        softly.assertAll();
     }
 
-    /**
-     * Tests the retrieval of all rooms.
-     * Steps:
-     * 1. Mock the repository to return a list of rooms.
-     * 2. Call the getRooms method.
-     * 3. Verify the returned list of rooms.
-     * Expected result: The list of rooms is retrieved from the repository.
-     */
     @Test
-    public void testGetRooms() {
-        when(roomRepository.findAll()).thenReturn(Collections.singletonList(room1));
+    @DisplayName("Should retrieve all rooms")
+    void testGetRooms() {
+        when(roomRepository.findAll()).thenReturn(Collections.singletonList(room));
 
-        List<Room> retrievedRooms = roomService.getRooms();
+        Optional<List<RoomDTO>> retrievedRooms = roomService.getRooms();
 
-        assertThat(retrievedRooms).hasSize(1);
-        assertThat(retrievedRooms.get(0)).isEqualTo(room1);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(retrievedRooms).isPresent();
+        softly.assertThat(retrievedRooms.get()).hasSize(1);
+        softly.assertThat(retrievedRooms.get().get(0).name()).isEqualTo("Room1");
+        softly.assertAll();
     }
 
-    /**
-     * Tests the update of a room by an admin user.
-     * Steps:
-     * 1. Mock the repository to return the room.
-     * 2. Call the updateRoom method.
-     * 3. Verify that the room is deleted and the updated room is saved in the repository.
-     * Expected result: The room is updated and saved in the repository.
-     */
     @Test
-    public void testUpdateRoomAsAdmin() {
-        Room oldRoom = new Room("Room1", RoomType.WORKSPACE);
-        Room updatedRoom = new Room("Room1Updated", RoomType.MEETING_ROOM);
+    @DisplayName("Should update room by admin user")
+    void testUpdateRoomAsAdmin() {
+        when(roomRepository.findByName("Room1")).thenReturn(Optional.of(room));
 
-        when(roomRepository.findByName("Room1")).thenReturn(Optional.of(oldRoom));
+        boolean result = roomService.updateRoom(adminUserDTO, "Room1", "Room1Updated", "MEETING_ROOM");
 
-        roomService.updateRoom(adminUser, "Room1", updatedRoom);
-
-        verify(roomRepository).update(oldRoom, updatedRoom);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(result).isTrue();
+        verify(roomRepository).update(any(Room.class), any(Room.class));
+        softly.assertAll();
     }
 
-    /**
-     * Tests the update of a room by a normal user.
-     * Steps:
-     * 1. Call the updateRoom method.
-     * 2. Verify that the room is not deleted and the updated room is not saved in the repository.
-     * Expected result: The room is not updated and not saved in the repository.
-     */
     @Test
-    public void testUpdateRoomAsNormalUser() {
-        Room updatedRoom = new Room("Room1Updated", RoomType.MEETING_ROOM);
+    @DisplayName("Should not update room by normal user")
+    void testUpdateRoomAsNormalUser() {
+        boolean result = roomService.updateRoom(normalUserDTO, "Room1", "Room1Updated", "MEETING_ROOM");
 
-        roomService.updateRoom(normalUser, "Room1", updatedRoom);
-
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(result).isFalse();
         verify(roomRepository, never()).update(any(Room.class), any(Room.class));
+        softly.assertAll();
     }
 
-    /**
-     * Tests the deletion of a room by an admin user.
-     * Steps:
-     * 1. Mock the repository to return the room.
-     * 2. Call the deleteRoom method.
-     * 3. Verify that the room is deleted from the repository.
-     * Expected result: The room is deleted from the repository.
-     */
     @Test
-    public void testDeleteRoomAsAdmin() {
-        when(roomRepository.findByName("Room1")).thenReturn(Optional.of(room1));
+    @DisplayName("Should delete room by admin user")
+    void testDeleteRoomAsAdmin() {
+        when(roomRepository.findByName("Room1")).thenReturn(Optional.of(room));
 
-        roomService.deleteRoom(adminUser, "Room1");
+        boolean result = roomService.deleteRoom(adminUserDTO, "Room1");
 
-        verify(roomRepository, times(1)).delete(room1);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(result).isTrue();
+        verify(roomRepository, times(1)).delete(any(Room.class));
+        softly.assertAll();
     }
 
-    /**
-     * Tests the deletion of a room by a normal user.
-     * Steps:
-     * 1. Call the deleteRoom method.
-     * 2. Verify that the room is not deleted from the repository.
-     * Expected result: The room is not deleted from the repository.
-     */
     @Test
-    public void testDeleteRoomAsNormalUser() {
-        roomService.deleteRoom(normalUser, "Room1");
+    @DisplayName("Should not delete room by normal user")
+    void testDeleteRoomAsNormalUser() {
+        boolean result = roomService.deleteRoom(normalUserDTO, "Room1");
 
-        verify(roomRepository, never()).delete(room1);
-    }
-
-    /**
-     * Tests the retrieval of a room by its name.
-     * Steps:
-     * 1. Mock the repository to return the room.
-     * 2. Call the getRoomByName method.
-     * 3. Verify the returned room.
-     * Expected result: The room is retrieved from the repository.
-     */
-    @Test
-    public void testGetRoomByName() {
-        when(roomRepository.findByName("Room1")).thenReturn(Optional.of(room1));
-
-        Optional<Room> foundRoom = roomService.getRoomByName("Room1");
-
-        assertThat(foundRoom).isPresent();
-        assertThat(foundRoom.get()).isEqualTo(room1);
-    }
-
-    /**
-     * Tests the retrieval of a non-existing room by its name.
-     * Steps:
-     * 1. Mock the repository to return an empty Optional.
-     * 2. Call the getRoomByName method.
-     * 3. Verify the room is not found.
-     * Expected result: The room is not found in the repository.
-     */
-    @Test
-    public void testGetNonExistingRoomByName() {
-        when(roomRepository.findByName("NonExistingRoom")).thenReturn(Optional.empty());
-
-        Optional<Room> foundRoom = roomService.getRoomByName("NonExistingRoom");
-
-        assertThat(foundRoom).isNotPresent();
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(result).isFalse();
+        verify(roomRepository, never()).delete(any(Room.class));
+        softly.assertAll();
     }
 }

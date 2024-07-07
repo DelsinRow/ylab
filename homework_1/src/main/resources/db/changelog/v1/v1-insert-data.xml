@@ -35,12 +35,14 @@
             <column name="room_type" value='WORKSPACE'/>
         </insert>
         <insert schemaName="${entitySchemaName}" tableName="bookings">
+            <column name="id" value="1"/>
             <column name="user_id" value="1"/>
             <column name="room_id" value='1'/>
             <column name="start_time" value='2024-10-11T10:00:00'/>
             <column name="end_time" value='2024-10-11T20:00:00'/>
         </insert>
         <insert schemaName="${entitySchemaName}" tableName="bookings">
+            <column name="id" value="2"/>
             <column name="user_id" value="2"/>
             <column name="room_id" value='1'/>
             <column name="start_time" value='2024-10-11T22:00:00'/>

@@ -1,12 +1,14 @@
 package com.sinaev.repositories;
 
-import com.sinaev.models.Booking;
-import com.sinaev.models.Room;
-import com.sinaev.models.RoomType;
-import com.sinaev.models.User;
+import com.sinaev.models.entities.Booking;
+import com.sinaev.models.entities.Room;
+import com.sinaev.models.entities.User;
+import com.sinaev.models.enums.RoomType;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -22,7 +24,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 
@@ -133,17 +134,8 @@ public class BookingRepositoryTest {
         }
     }
 
-    /**
-     * Test the method findByRoomAndTime in BookingRepository.
-     * Steps:
-     * 1. Create a user and a room.
-     * 2. Create a booking with the user and room.
-     * 3. Save the user and room to the database.
-     * 4. Save the booking to the database using BookingRepository.
-     * 5. Retrieve the booking by room and start time.
-     * 6. Verify the retrieved booking matches the saved booking.
-     */
     @Test
+    @DisplayName("Should find booking by room and time")
     public void testFindByRoomAndTime() {
         User user = new User("testUser", "testPass");
         Room room = new Room("Room1", RoomType.WORKSPACE);
@@ -154,26 +146,19 @@ public class BookingRepositoryTest {
         saveRoom(room);
         bookingRepository.save(booking);
 
-        Optional<Booking> foundBooking = bookingRepository.findByRoomAndTime(startTime, room);
+        Optional<Booking> foundBooking = bookingRepository.findByRoomAndTime(startTime, room.getName());
 
-        assertThat(foundBooking).isPresent();
-        assertThat(foundBooking.get().getUser().getUsername()).isEqualTo("testUser");
-        assertThat(foundBooking.get().getRoom().getName()).isEqualTo("Room1");
-        assertThat(foundBooking.get().getStartTime()).isEqualTo(startTime);
-        assertThat(foundBooking.get().getEndTime()).isEqualTo(endTime);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(foundBooking).isPresent();
+        softly.assertThat(foundBooking.get().getUser().getUsername()).isEqualTo("testUser");
+        softly.assertThat(foundBooking.get().getRoom().getName()).isEqualTo("Room1");
+        softly.assertThat(foundBooking.get().getStartTime()).isEqualTo(startTime);
+        softly.assertThat(foundBooking.get().getEndTime()).isEqualTo(endTime);
+        softly.assertAll();
     }
 
-    /**
-     * Test the method save in BookingRepository.
-     * Steps:
-     * 1. Create a user and a room.
-     * 2. Create a booking with the user and room.
-     * 3. Save the user and room to the database.
-     * 4. Save the booking to the database using BookingRepository.
-     * 5. Retrieve the booking by room and start time.
-     * 6. Verify the retrieved booking matches the saved booking.
-     */
     @Test
+    @DisplayName("Should save booking")
     public void testSave() {
         User user = new User("testUser", "testPass");
         Room room = new Room("Room1", RoomType.WORKSPACE);
@@ -184,28 +169,19 @@ public class BookingRepositoryTest {
         saveRoom(room);
         bookingRepository.save(booking);
 
-        Optional<Booking> foundBooking = bookingRepository.findByRoomAndTime(startTime, room);
+        Optional<Booking> foundBooking = bookingRepository.findByRoomAndTime(startTime, room.getName());
 
-        assertThat(foundBooking).isPresent();
-        assertThat(foundBooking.get().getUser().getUsername()).isEqualTo("testUser");
-        assertThat(foundBooking.get().getRoom().getName()).isEqualTo("Room1");
-        assertThat(foundBooking.get().getStartTime()).isEqualTo(startTime);
-        assertThat(foundBooking.get().getEndTime()).isEqualTo(endTime);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(foundBooking).isPresent();
+        softly.assertThat(foundBooking.get().getUser().getUsername()).isEqualTo("testUser");
+        softly.assertThat(foundBooking.get().getRoom().getName()).isEqualTo("Room1");
+        softly.assertThat(foundBooking.get().getStartTime()).isEqualTo(startTime);
+        softly.assertThat(foundBooking.get().getEndTime()).isEqualTo(endTime);
+        softly.assertAll();
     }
 
-    /**
-     * Test the method update in BookingRepository.
-     * Steps:
-     * 1. Create a user and a room.
-     * 2. Create an old booking with the user and room.
-     * 3. Create a new booking with the same user and room but different times.
-     * 4. Save the user and room to the database.
-     * 5. Save the old booking to the database using BookingRepository.
-     * 6. Update the old booking to the new booking using BookingRepository.
-     * 7. Retrieve the booking by the new room and start time.
-     * 8. Verify the retrieved booking matches the updated booking.
-     */
     @Test
+    @DisplayName("Should update booking")
     public void testUpdate() {
         User user = new User("testUser", "testPass");
         Room room = new Room("Room1", RoomType.WORKSPACE);
@@ -218,27 +194,19 @@ public class BookingRepositoryTest {
         bookingRepository.save(oldBooking);
         bookingRepository.update(oldBooking, newBooking);
 
-        Optional<Booking> foundBooking = bookingRepository.findByRoomAndTime(newBooking.getStartTime(), room);
+        Optional<Booking> foundBooking = bookingRepository.findByRoomAndTime(newBooking.getStartTime(), room.getName());
 
-        assertThat(foundBooking).isPresent();
-        assertThat(foundBooking.get().getUser().getUsername()).isEqualTo("testUser");
-        assertThat(foundBooking.get().getRoom().getName()).isEqualTo("Room1");
-        assertThat(foundBooking.get().getStartTime()).isEqualTo(newBooking.getStartTime());
-        assertThat(foundBooking.get().getEndTime()).isEqualTo(newBooking.getEndTime());
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(foundBooking).isPresent();
+        softly.assertThat(foundBooking.get().getUser().getUsername()).isEqualTo("testUser");
+        softly.assertThat(foundBooking.get().getRoom().getName()).isEqualTo("Room1");
+        softly.assertThat(foundBooking.get().getStartTime()).isEqualTo(newBooking.getStartTime());
+        softly.assertThat(foundBooking.get().getEndTime()).isEqualTo(newBooking.getEndTime());
+        softly.assertAll();
     }
 
-    /**
-     * Test the method delete in BookingRepository.
-     * Steps:
-     * 1. Create a user and a room.
-     * 2. Create a booking with the user and room
-     * 3. Save the user and room to the database.
-     * 4. Save the booking to the database using BookingRepository.
-     * 5. Delete the booking from the database using BookingRepository.
-     * 6. Retrieve the booking by room and start time.
-     * 7. Verify the retrieved booking is not present.
-     */
     @Test
+    @DisplayName("Should delete booking")
     public void testDelete() {
         User user = new User("testUser", "testPass");
         Room room = new Room("Room1", RoomType.WORKSPACE);
@@ -249,22 +217,15 @@ public class BookingRepositoryTest {
         saveRoom(room);
         bookingRepository.save(booking);
         bookingRepository.delete(booking);
-        Optional<Booking> foundBooking = bookingRepository.findByRoomAndTime(startTime, room);
+        Optional<Booking> foundBooking = bookingRepository.findByRoomAndTime(startTime, room.getName());
 
-        assertThat(foundBooking).isNotPresent();
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(foundBooking).isNotPresent();
+        softly.assertAll();
     }
 
-    /**
-     * Test the method findByRoom in BookingRepository.
-     * Steps:
-     * 1. Create a user and a room.
-     * 2. Create a booking with the user and room.
-     * 3. Save the user and room to the database.
-     * 4. Save the booking to the database using BookingRepository.
-     * 5. Retrieve the bookings by room.
-     * 6. Verify the retrieved bookings match the saved booking.
-     */
     @Test
+    @DisplayName("Should find bookings by room")
     public void testFindByRoom() {
         User user = new User("testUser", "testPass");
         Room room = new Room("Room1", RoomType.WORKSPACE);
@@ -274,24 +235,17 @@ public class BookingRepositoryTest {
         saveUser(user);
         saveRoom(room);
         bookingRepository.save(booking);
-        List<Booking> bookings = bookingRepository.findByRoom(room);
+        List<Booking> bookings = bookingRepository.findByRoomName(room.getName());
 
-        assertThat(bookings).hasSize(1);
-        assertThat(bookings.get(0).getUser().getUsername()).isEqualTo("testUser");
-        assertThat(bookings.get(0).getRoom().getName()).isEqualTo("Room1");
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(bookings).hasSize(1);
+        softly.assertThat(bookings.get(0).getUser().getUsername()).isEqualTo("testUser");
+        softly.assertThat(bookings.get(0).getRoom().getName()).isEqualTo("Room1");
+        softly.assertAll();
     }
 
-    /**
-     * Test the method findByUser in BookingRepository.
-     * Steps:
-     * 1. Create a user and a room.
-     * 2. Create a booking with the user and room.
-     * 3. Save the user and room to the database.
-     * 4. Save the booking to the database using BookingRepository.
-     * 5. Retrieve the bookings by user.
-     * 6. Verify the retrieved bookings match the saved booking.
-     */
     @Test
+    @DisplayName("Should find bookings by user")
     public void testFindByUser() {
         User user = new User("testUser", "testPass");
         Room room = new Room("Room1", RoomType.WORKSPACE);
@@ -301,24 +255,17 @@ public class BookingRepositoryTest {
         saveUser(user);
         saveRoom(room);
         bookingRepository.save(booking);
-        List<Booking> bookings = bookingRepository.findByUser(user);
+        List<Booking> bookings = bookingRepository.findByUserName(user.getUsername());
 
-        assertThat(bookings).hasSize(1);
-        assertThat(bookings.get(0).getRoom().getName()).isEqualTo("Room1");
-        assertThat(bookings.get(0).getUser().getUsername()).isEqualTo("testUser");
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(bookings).hasSize(1);
+        softly.assertThat(bookings.get(0).getRoom().getName()).isEqualTo("Room1");
+        softly.assertThat(bookings.get(0).getUser().getUsername()).isEqualTo("testUser");
+        softly.assertAll();
     }
 
-    /**
-     * Test the method findByDate in BookingRepository.
-     * Steps:
-     * 1. Create a user and a room.
-     * 2. Create a booking with the user and room.
-     * 3. Save the user and room to the database.
-     * 4. Save the booking to the database using BookingRepository.
-     * 5. Retrieve the bookings by date.
-     * 6. Verify the retrieved bookings match the saved booking.
-     */
     @Test
+    @DisplayName("Should find bookings by date")
     public void testFindByDate() {
         User user = new User("testUser", "testPass");
         Room room = new Room("Room1", RoomType.WORKSPACE);
@@ -329,13 +276,15 @@ public class BookingRepositoryTest {
         saveRoom(room);
         bookingRepository.save(booking);
 
-        List<Booking> bookings = bookingRepository.findByDate(startTime);
+        List<Booking> bookings = bookingRepository.findByDate(startTime.toLocalDate());
 
-        assertThat(bookings).hasSize(1);
-        assertThat(bookings.get(0).getRoom().getName()).isEqualTo("Room1");
-        assertThat(bookings.get(0).getUser().getUsername()).isEqualTo("testUser");
-        assertThat(bookings.get(0).getStartTime()).isEqualTo(startTime);
-        assertThat(bookings.get(0).getEndTime()).isEqualTo(endTime);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(bookings).hasSize(1);
+        softly.assertThat(bookings.get(0).getRoom().getName()).isEqualTo("Room1");
+        softly.assertThat(bookings.get(0).getUser().getUsername()).isEqualTo("testUser");
+        softly.assertThat(bookings.get(0).getStartTime()).isEqualTo(startTime);
+        softly.assertThat(bookings.get(0).getEndTime()).isEqualTo(endTime);
+        softly.assertAll();
     }
 
     /**

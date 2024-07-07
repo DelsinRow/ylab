@@ -1,6 +1,6 @@
 package com.sinaev.handlers;
 
-import com.sinaev.config.AppConfig;
+import com.sinaev.configs.AppConfig;
 
 import java.sql.Connection;
 import java.sql.SQLException;

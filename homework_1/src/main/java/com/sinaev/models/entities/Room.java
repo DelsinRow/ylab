@@ -1,6 +1,6 @@
-package com.sinaev.models;
+package com.sinaev.models.entities;
 
-import lombok.AllArgsConstructor;
+import com.sinaev.models.enums.RoomType;
 import lombok.Getter;
 import lombok.Setter;
 
