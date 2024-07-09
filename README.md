@@ -1,2 +1,2 @@
 ## Основной README файл
-1. [ДЗ №1](https://github.com/DelsinRow/ylab/pull/1/files) ```Ссылка указана на Pull Request```
+1. [Документация](https://github.com/DelsinRow/ylab/tree/homework_3/homework_1/docs) 
