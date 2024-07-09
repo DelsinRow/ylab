@@ -7,6 +7,8 @@
     <property name="entitySchemaName" value="entity_schema"/>
 
     <changeSet id="v1-insert-data" author="sinaev">
+
+        <comment>This changeSet inserts initial user data for admin and regular user accounts.</comment>
         <insert schemaName="${entitySchemaName}" tableName="users">
             <column name="id" value="1"/>
             <column name="username" value="admin"/>
@@ -19,6 +21,8 @@
             <column name="password" value="user"/>
             <column name="is_admin" value="false"/>
         </insert>
+
+        <comment>This changeSet inserts initial room data for workspace type rooms.</comment>
         <insert schemaName="${entitySchemaName}" tableName="rooms">
             <column name="id" value="1"/>
             <column name="room_name" value="first"/>
@@ -34,6 +38,8 @@
             <column name="room_name" value="third"/>
             <column name="room_type" value='WORKSPACE'/>
         </insert>
+
+        <comment>This changeSet inserts initial booking data for users and rooms.</comment>
         <insert schemaName="${entitySchemaName}" tableName="bookings">
             <column name="id" value="1"/>
             <column name="user_id" value="1"/>
