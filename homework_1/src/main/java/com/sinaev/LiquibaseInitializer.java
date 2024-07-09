@@ -13,20 +13,23 @@ public class LiquibaseInitializer implements ServletContextListener {
     public void contextInitialized(ServletContextEvent sce) {
         LiquibaseConfig lbConfig = new LiquibaseConfig();
 
-        MyLiquibaseRunner liquibaseRunner = new MyLiquibaseRunner(
-                lbConfig.getChangeLogFile(),
-                lbConfig.getDbUrl(),
-                lbConfig.getDbUser(),
-                lbConfig.getDbPassword(),
-                lbConfig.getDefaultSchemaName(),
-                lbConfig.getEntitySchemaName(),
-                lbConfig.getDatabaseChangeLogTableName(),
-                lbConfig.getDatabaseChangeLogLockTableName()
-        );
+        MyLiquibaseRunner liquibaseRunner = MyLiquibaseRunner.builder()
+                .changelogFile(lbConfig.getChangeLogFile())
+                .urlDb(lbConfig.getDbUrl())
+                .usernameDb(lbConfig.getDbUser())
+                .passwordDb(lbConfig.getDbPassword())
+                .defaultSchemaName(lbConfig.getDefaultSchemaName())
+                .entitySchemaName(lbConfig.getEntitySchemaName())
+                .databaseChangeLogTableName(lbConfig.getDatabaseChangeLogTableName())
+                .databaseChangeLogTableName(lbConfig.getDatabaseChangeLogLockTableName())
+                .build();
 
         liquibaseRunner.runLiquibase();
 
-        AuditLogRepository auditLogRepository = new AuditLogRepository(lbConfig.getDbUrl(), lbConfig.getDbUser(), lbConfig.getDbPassword());
+        AuditLogRepository auditLogRepository = new AuditLogRepository(
+                lbConfig.getDbUrl(),
+                lbConfig.getDbUser(),
+                lbConfig.getDbPassword());
         AuditAspect.init(auditLogRepository);
     }
 
