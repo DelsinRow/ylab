@@ -1,10 +1,10 @@
 package com.sinaev.repositories;
 
 import com.sinaev.handlers.SQLQueryHandler;
-import com.sinaev.models.Booking;
-import com.sinaev.models.Room;
-import com.sinaev.models.RoomType;
-import com.sinaev.models.User;
+import com.sinaev.models.entities.Booking;
+import com.sinaev.models.entities.Room;
+import com.sinaev.models.entities.User;
+import com.sinaev.models.enums.RoomType;
 import lombok.RequiredArgsConstructor;
 
 import java.sql.Connection;
@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -32,10 +33,10 @@ public class BookingRepository {
      * Finds a booking by room and start time.
      *
      * @param startTime the start time of the booking
-     * @param room      the room of the booking
+     * @param roomName  the name of room of the booking
      * @return an Optional containing the found booking, or an empty Optional if no booking is found
      */
-    public Optional<Booking> findByRoomAndTime(LocalDateTime startTime, Room room) {
+    public Optional<Booking> findByRoomAndTime(LocalDateTime startTime, String roomName) {
         String findByRoomAndTimeSQL = "SELECT * FROM bookings WHERE start_time = ? AND room_id = ?";
         Booking foundBooking = null;
 
@@ -45,13 +46,13 @@ public class BookingRepository {
             changeSearchPath(connection);
 
             preparedStatement.setTimestamp(1, Timestamp.valueOf(startTime));
-            preparedStatement.setLong(2, getRoomId(room));
+            preparedStatement.setLong(2, getRoomId(roomName));
 
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 if (resultSet.next()) {
                     foundBooking = new Booking(
                             findUserById(resultSet.getLong("user_id")),
-                            room,
+                            findRoomByName(roomName),
                             resultSet.getTimestamp("start_time").toLocalDateTime(),
                             resultSet.getTimestamp("end_time").toLocalDateTime()
                     );
@@ -77,8 +78,8 @@ public class BookingRepository {
 
             changeSearchPath(connection);
 
-            preparedStatement.setLong(1, getUserId(booking.getUser()));
-            preparedStatement.setLong(2, getRoomId(booking.getRoom()));
+            preparedStatement.setLong(1, getUserId(booking.getUser().getUsername()));
+            preparedStatement.setLong(2, getRoomId(booking.getRoom().getName()));
             preparedStatement.setTimestamp(3, Timestamp.valueOf(booking.getStartTime()));
             preparedStatement.setTimestamp(4, Timestamp.valueOf(booking.getEndTime()));
             int affectedRows = preparedStatement.executeUpdate();
@@ -107,11 +108,11 @@ public class BookingRepository {
 
             changeSearchPath(connection);
 
-            preparedStatement.setLong(1, getUserId(newBooking.getUser()));
-            preparedStatement.setLong(2, getRoomId(newBooking.getRoom()));
+            preparedStatement.setLong(1, getUserId(newBooking.getUser().getUsername()));
+            preparedStatement.setLong(2, getRoomId(newBooking.getRoom().getName()));
             preparedStatement.setTimestamp(3, Timestamp.valueOf(newBooking.getStartTime()));
             preparedStatement.setTimestamp(4, Timestamp.valueOf(newBooking.getEndTime()));
-            preparedStatement.setLong(5, getRoomId(oldBooking.getRoom()));
+            preparedStatement.setLong(5, getRoomId(oldBooking.getRoom().getName()));
             preparedStatement.setTimestamp(6, Timestamp.valueOf(oldBooking.getStartTime()));
 
             int affectedRows = preparedStatement.executeUpdate();
@@ -138,8 +139,8 @@ public class BookingRepository {
 
             changeSearchPath(connection);
 
-            preparedStatement.setLong(1, getUserId(booking.getUser()));
-            preparedStatement.setLong(2, getRoomId(booking.getRoom()));
+            preparedStatement.setLong(1, getUserId(booking.getUser().getUsername()));
+            preparedStatement.setLong(2, getRoomId(booking.getRoom().getName()));
             preparedStatement.setTimestamp(3, Timestamp.valueOf(booking.getStartTime()));
             preparedStatement.setTimestamp(4, Timestamp.valueOf(booking.getEndTime()));
             int affectedRows = preparedStatement.executeUpdate();
@@ -157,10 +158,10 @@ public class BookingRepository {
     /**
      * Finds all bookings for a specific room.
      *
-     * @param room the room to find bookings for
+     * @param roomName the name of room to find bookings for
      * @return a list of bookings for the specified room
      */
-    public List<Booking> findByRoom(Room room) {
+    public List<Booking> findByRoomName(String roomName) {
         List<Booking> bookings = new ArrayList<>();
         String findByRoomSQL = "SELECT * FROM bookings WHERE room_id = ?";
 
@@ -169,13 +170,13 @@ public class BookingRepository {
 
             changeSearchPath(connection);
 
-            preparedStatement.setLong(1, getRoomId(room));
+            preparedStatement.setLong(1, getRoomId(roomName));
 
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 while (resultSet.next()) {
                     Booking booking = new Booking(
                             findUserById(resultSet.getLong("user_id")),
-                            room,
+                            findRoomByName(roomName),
                             resultSet.getTimestamp("start_time").toLocalDateTime(),
                             resultSet.getTimestamp("end_time").toLocalDateTime()
                     );
@@ -192,10 +193,10 @@ public class BookingRepository {
     /**
      * Finds all bookings for a specific user.
      *
-     * @param user the user to find bookings for
+     * @param userName the username of user to find bookings for
      * @return a list of bookings for the specified user
      */
-    public List<Booking> findByUser(User user) {
+    public List<Booking> findByUserName(String userName) {
         List<Booking> bookings = new ArrayList<>();
         String findByUserSQL = "SELECT * FROM bookings WHERE user_id = ?";
 
@@ -204,12 +205,12 @@ public class BookingRepository {
 
             changeSearchPath(connection);
 
-            preparedStatement.setLong(1, getUserId(user));
+            preparedStatement.setLong(1, getUserId(userName));
 
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 while (resultSet.next()) {
                     Booking booking = new Booking(
-                            user,
+                            findUserById(getUserId(userName)),
                             findRoomById(resultSet.getLong("room_id")),
                             resultSet.getTimestamp("start_time").toLocalDateTime(),
                             resultSet.getTimestamp("end_time").toLocalDateTime()
@@ -230,7 +231,7 @@ public class BookingRepository {
      * @param date the date to find bookings for
      * @return a list of bookings for the specified date
      */
-    public List<Booking> findByDate(LocalDateTime date) {
+    public List<Booking> findByDate(LocalDate date) {
         List<Booking> bookings = new ArrayList<>();
         String findByDateSQL = "SELECT * FROM bookings WHERE start_time >= ? AND start_time < ?";
 
@@ -238,9 +239,9 @@ public class BookingRepository {
              PreparedStatement preparedStatement = connection.prepareStatement(findByDateSQL)) {
 
             changeSearchPath(connection);
-
-            LocalDateTime endOfDay = date.toLocalDate().atTime(LocalTime.MAX);
-            preparedStatement.setTimestamp(1, Timestamp.valueOf(date));
+            LocalDateTime dateTime = date.atTime(0, 0);
+            LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
+            preparedStatement.setTimestamp(1, Timestamp.valueOf(dateTime));
             preparedStatement.setTimestamp(2, Timestamp.valueOf(endOfDay));
 
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -260,21 +261,29 @@ public class BookingRepository {
         return bookings;
     }
 
+    public Room findRoomByName(String roomName) {
+        try {
+            return findRoomById(getRoomId(roomName));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Retrieves the ID of a user from the database.
      *
-     * @param user the user to find the ID for
+     * @param username the name of user to find the ID for
      * @return the ID of the specified user
      * @throws SQLException if the user is not found or a database access error occurs
      */
-    private long getUserId(User user) throws SQLException {
+    private long getUserId(String username) throws SQLException {
         String selectUserIdSQL = "SELECT id FROM users WHERE username = ?";
         try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
              PreparedStatement preparedStatement = connection.prepareStatement(selectUserIdSQL)) {
 
             changeSearchPath(connection);
 
-            preparedStatement.setString(1, user.getUsername());
+            preparedStatement.setString(1, username);
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 if (resultSet.next()) {
                     return resultSet.getLong("id");
@@ -288,18 +297,18 @@ public class BookingRepository {
     /**
      * Retrieves the ID of a room from the database.
      *
-     * @param room the room to find the ID for
+     * @param roomName the name of room to find the ID for
      * @return the ID of the specified room
      * @throws SQLException if the room is not found or a database access error occurs
      */
-    private long getRoomId(Room room) throws SQLException {
+    private long getRoomId(String roomName) throws SQLException {
         String selectRoomIdSQL = "SELECT id FROM rooms WHERE room_name = ?";
         try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
              PreparedStatement preparedStatement = connection.prepareStatement(selectRoomIdSQL)) {
 
             changeSearchPath(connection);
 
-            preparedStatement.setString(1, room.getName());
+            preparedStatement.setString(1, roomName);
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 if (resultSet.next()) {
                     return resultSet.getLong("id");

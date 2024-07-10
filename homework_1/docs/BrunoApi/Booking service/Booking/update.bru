@@ -1,0 +1,21 @@
+meta {
+  name: update
+  type: http
+  seq: 4
+}
+
+put {
+  url: http://localhost:8080/homework/booking/update
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "originalRoomName" : "first",
+    "originalStartTime" : "2024-07-05T15:00:00",
+    "newRoomName" : "second",
+    "newStarTime" : "2024-07-06T10:00:00",
+    "newEndTime" : "2024-07-06T11:00:00"
+  }
+}

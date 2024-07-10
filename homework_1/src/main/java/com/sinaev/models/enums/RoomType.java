@@ -1,11 +1,10 @@
-package com.sinaev.models;
+package com.sinaev.models.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 /**
- * Represents the type of a room.
+ * Represents the type of a rooms.
  */
 @Getter
 @AllArgsConstructor

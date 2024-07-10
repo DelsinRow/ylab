@@ -7,14 +7,18 @@
     <property name="entitySchemaName" value="entity_schema" dbms="postgresql"/>
 
     <changeSet id="v1-create-table" author="sinaev">
-<!--        <sql>CREATE SCHEMA ${entitySchemaName};</sql>-->
+        <comment>This changeSet sets the search path and creates sequences and tables required for the application.</comment>
         <sql>
             SET search_path TO ${entitySchemaName}, public;
         </sql>
-        <sql>CREATE TYPE roomtype AS ENUM ('WORKSPACE', 'MEETING_ROOM');</sql>
+        <sql>
+            CREATE TYPE roomtype AS ENUM ('WORKSPACE', 'MEETING_ROOM');
+        </sql>
+
         <createSequence schemaName="${entitySchemaName}" sequenceName="user_id_seq" startValue="3" incrementBy="1"/>
         <createSequence schemaName="${entitySchemaName}" sequenceName="room_id_seq" startValue="4" incrementBy="1"/>
         <createSequence schemaName="${entitySchemaName}" sequenceName="booking_id_seq" startValue="3" incrementBy="1"/>
+        <createSequence schemaName="${entitySchemaName}" sequenceName="audit_log_id_seq" startValue="1" incrementBy="1"/>
 
         <createTable schemaName="${entitySchemaName}" tableName="users">
             <column name="id" type="BIGINT">
@@ -32,6 +36,7 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
+
         <createTable schemaName="${entitySchemaName}" tableName="rooms">
             <column name="id" type="BIGINT">
                 <constraints primaryKey="true" nullable="false"/>
@@ -43,6 +48,7 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
+
         <createTable schemaName="${entitySchemaName}" tableName="bookings">
             <column name="id" type="BIGINT">
                 <constraints primaryKey="true" nullable="false"/>
@@ -60,10 +66,28 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
+
+        <createTable schemaName="${entitySchemaName}" tableName="audit_log">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="action" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="timestamp" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
         <addDefaultValue schemaName="${entitySchemaName}" tableName="users" columnName="id" defaultValueSequenceNext="user_id_seq"/>
         <addDefaultValue schemaName="${entitySchemaName}" tableName="rooms" columnName="id" defaultValueSequenceNext="room_id_seq"/>
         <addDefaultValue schemaName="${entitySchemaName}" tableName="bookings" columnName="id" defaultValueSequenceNext="booking_id_seq"/>
+        <addDefaultValue schemaName="${entitySchemaName}" tableName="audit_log" columnName="id" defaultValueSequenceNext="audit_log_id_seq"/>
 
+        <comment>Add foreign key constraints to ensure referential integrity between tables.</comment>
         <addForeignKeyConstraint baseTableSchemaName="${entitySchemaName}"
                                  constraintName="fk_booking_user"
                                  baseTableName="bookings" baseColumnNames="user_id"

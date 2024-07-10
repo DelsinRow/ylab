@@ -1,7 +1,11 @@
 package com.sinaev.services;
 
-import com.sinaev.models.Room;
-import com.sinaev.models.User;
+import com.sinaev.annotations.Loggable;
+import com.sinaev.mappers.RoomMapper;
+import com.sinaev.models.dto.RoomDTO;
+import com.sinaev.models.dto.UserDTO;
+import com.sinaev.models.entities.Room;
+import com.sinaev.models.enums.RoomType;
 import com.sinaev.repositories.RoomRepository;
 
 import java.util.List;
@@ -10,6 +14,7 @@ import java.util.Optional;
 /**
  * Room service class that manages room creation, retrieval, updating, and deletion.
  */
+@Loggable
 public class RoomService {
     private final RoomRepository roomRepository;
 
@@ -25,21 +30,26 @@ public class RoomService {
     /**
      * Creates a new room if the user is an admin and the room does not already exist.
      *
-     * @param user the user attempting to create the room
-     * @param room the room to be created
+     * @param userDTO the DTO of user attempting to create the room
+     * @param roomDTO the DTO of room to be created
      */
-    public void createRoom(User user, Room room) {
-        if (!user.isAdmin()) {
-            System.out.println("You do not have admin user access");
-        } else {
-            if (!roomRepository.exists(room)) {
-                roomRepository.save(room);
-                System.out.println("Room: '" + room.getName() + "' successfully created");
-            } else {
-                System.out.println("Room with name '" + room.getName() + "' already exists");
-            }
+    public Optional<RoomDTO> createRoom(UserDTO userDTO, RoomDTO roomDTO) {
 
+        if (!userIsAdmin(userDTO)) {
+            System.out.println("You do not have admin user access");
+            return Optional.empty();
         }
+        if (roomRepository.exists(roomDTO.name())) {
+            System.out.println("Room with name '" + roomDTO.name() + "' already exists");
+            return Optional.empty();
+
+        } else {
+            Room room = RoomMapper.INSTANCE.toEntity(roomDTO);
+            roomRepository.save(room);
+            return Optional.of(roomDTO);
+        }
+
+
     }
 
     /**
@@ -47,57 +57,62 @@ public class RoomService {
      *
      * @return the list of rooms
      */
-    public List<Room> getRooms() {
-        return roomRepository.findAll();
+    public Optional<List<RoomDTO>> getRooms() {
+        List<RoomDTO> rooms = roomRepository.findAll().stream().map(RoomMapper.INSTANCE::toDTO).toList();
+        return rooms.isEmpty() ? Optional.empty() : Optional.of(rooms);
     }
 
     /**
      * Updates an existing room if the user is an admin and the room exists.
      *
-     * @param user        the user attempting to update the room
-     * @param roomName    the name of the room to be updated
-     * @param updatedRoom the updated room details
+     * @param userDTO          the DTO of user attempting to update the room
+     * @param originalRoomName the name of the room to be updated
+     * @param newRoomName      the name of new room
+     * @param newRoomType      the name of new room's type
      */
-    public void updateRoom(User user, String roomName, Room updatedRoom) {
-        if (user.isAdmin()) {
-            Optional<Room> optionalRoom = roomRepository.findByName(roomName);
-            if (optionalRoom.isPresent()) {
-                Room oldRoom = optionalRoom.get();
-                roomRepository.update(oldRoom, updatedRoom);
-            }
-        } else {
+    public boolean updateRoom(UserDTO userDTO, String originalRoomName, String newRoomName, String newRoomType) {
+        if (!userIsAdmin(userDTO)) {
             System.out.println("You do not have admin user access");
+            return false;
+        }
+        Optional<Room> optionalRoom = roomRepository.findByName(originalRoomName);
+        if (optionalRoom.isEmpty()) {
+            System.out.println("Room not founded");
+            return false;
+        } else {
+            RoomType roomType = RoomType.valueOf(newRoomType);
+            Room oldRoom = optionalRoom.get();
+            Room newRoom = new Room(newRoomName, roomType);
+            roomRepository.update(oldRoom, newRoom);
+            return true;
         }
     }
 
     /**
      * Deletes a room if the user is an admin and the room exists.
      *
-     * @param user     the user attempting to delete the room
+     * @param userDTO  the DTO of  user attempting to delete the room
      * @param roomName the name of the room to be deleted
      */
-    public void deleteRoom(User user, String roomName) {
-        if (user.isAdmin()) {
-            Optional<Room> optionalRoom = roomRepository.findByName(roomName);
-            if (optionalRoom.isPresent()) {
-                Room room = optionalRoom.get();
-                roomRepository.delete(room);
-                System.out.println("Room '" + roomName + "' successfully removed");
-            } else {
-                System.out.println("Room not found");
-            }
-        } else {
+    public boolean deleteRoom(UserDTO userDTO, String roomName) {
+        if (!userIsAdmin(userDTO)) {
             System.out.println("You do not have admin user access");
+            return false;
         }
+
+        Optional<Room> optionalRoom = roomRepository.findByName(roomName);
+        if (optionalRoom.isEmpty()) {
+            System.out.println("Room " + roomName + " not found");
+            return false;
+        }
+
+        Room room = optionalRoom.get();
+        roomRepository.delete(room);
+        return true;
     }
 
-    /**
-     * Finds a room by its name.
-     *
-     * @param resourceName the name of the room to find
-     * @return an Optional containing the found room, or an empty Optional if no room was found
-     */
-    public Optional<Room> getRoomByName(String resourceName) {
-        return roomRepository.findByName(resourceName);
+    private boolean userIsAdmin(UserDTO userDTO) {
+        return userDTO.admin();
     }
+
 }

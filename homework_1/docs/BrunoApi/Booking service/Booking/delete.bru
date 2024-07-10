@@ -1,0 +1,18 @@
+meta {
+  name: delete
+  type: http
+  seq: 5
+}
+
+delete {
+  url: http://localhost:8080/homework/booking/delete
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "roomName" : "second",
+    "startTime" : "2024-07-06T10:00:00"
+  }
+}

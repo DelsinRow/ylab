@@ -1,6 +1,5 @@
-package com.sinaev.models;
+package com.sinaev.models.entities;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 

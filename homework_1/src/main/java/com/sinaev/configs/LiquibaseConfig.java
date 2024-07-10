@@ -1,4 +1,4 @@
-package com.sinaev.config;
+package com.sinaev.configs;
 
 import java.io.IOException;
 import java.io.InputStream;

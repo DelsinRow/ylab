@@ -3,6 +3,7 @@ package com.sinaev;
 import liquibase.Scope;
 import liquibase.command.CommandScope;
 import liquibase.resource.ClassLoaderResourceAccessor;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 
 import java.sql.Connection;
@@ -13,7 +14,7 @@ import java.sql.Statement;
 /**
  * Handles the execution of Liquibase migrations.
  */
-@RequiredArgsConstructor
+@Builder
 public class MyLiquibaseRunner {
     private final String changelogFile;
     private final String urlDb;
@@ -23,6 +24,14 @@ public class MyLiquibaseRunner {
     private final String entitySchemaName;
     private final String databaseChangeLogTableName;
     private final String databaseChangeLogLockTableName;
+
+    static {
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Failed to load PostgreSQL driver", e);
+        }
+    }
 
     /**
      * Runs the Liquibase update command.

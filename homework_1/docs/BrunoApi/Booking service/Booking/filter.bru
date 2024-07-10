@@ -1,0 +1,17 @@
+meta {
+  name: filter
+  type: http
+  seq: 3
+}
+
+get {
+  url: http://localhost:8080/homework/booking/filter
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "admin"
+  }
+}

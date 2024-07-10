@@ -1,5 +1,7 @@
-package com.sinaev.models;
+package com.sinaev.models.entities;
 
+import com.sinaev.annotations.Default;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,6 +10,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@EqualsAndHashCode(of = {"username", "password"})
 public class User {
     /**
      * The id of the user.
@@ -24,11 +27,6 @@ public class User {
     private String password;
 
     /**
-     * Indicates whether the user is logged in.
-     */
-    private boolean isLoggedIn;
-
-    /**
      * Indicates whether the user has admin access.
      */
     private boolean isAdmin;
@@ -40,6 +38,7 @@ public class User {
      * @param password the password of the user.
      * @param isAdmin  whether the user has admin privileges.
      */
+    @Default
     public User(String username, String password, boolean isAdmin) {
         this.username = username;
         this.password = password;
@@ -53,18 +52,11 @@ public class User {
      * @param username the username of the user.
      * @param password the password of the user.
      */
+
     public User(String username, String password) {
         this.username = username;
         this.password = password;
-        this.isAdmin = false;
     }
 
-    /**
-     * Constructs a new user with the specified login status.
-     *
-     * @param isLoggedIn whether the user is logged in.
-     */
-    public User(boolean isLoggedIn) {
-        this.isLoggedIn = isLoggedIn;
-    }
+
 }

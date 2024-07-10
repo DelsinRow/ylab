@@ -1,11 +1,15 @@
 package com.sinaev.services;
 
-import com.sinaev.models.Booking;
-import com.sinaev.models.Room;
-import com.sinaev.models.RoomType;
-import com.sinaev.models.User;
+import com.sinaev.models.dto.BookingDTO;
+import com.sinaev.models.dto.UserDTO;
+import com.sinaev.models.entities.Booking;
+import com.sinaev.models.entities.Room;
+import com.sinaev.models.entities.User;
+import com.sinaev.models.enums.RoomType;
 import com.sinaev.repositories.BookingRepository;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -18,8 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class BookingServiceTest {
@@ -27,105 +29,80 @@ public class BookingServiceTest {
     private BookingService bookingService;
     private BookingRepository bookingRepository;
     private DateTimeFormatter dateFormatter;
-    private User adminUser;
-    private User normalUser;
+    private UserDTO adminUserDTO;
+    private UserDTO normalUserDTO;
     private Room room1;
     private Room room2;
 
-    /**
-     * Set up the test environment.
-     * This method is executed before each test.
-     */
     @BeforeEach
     public void setUp() {
         dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH");
         bookingRepository = Mockito.mock(BookingRepository.class);
         bookingService = Mockito.spy(new BookingService(bookingRepository));
-        adminUser = new User("admin", "adminpass", true);
-        normalUser = new User("user1", "password", false);
+        adminUserDTO = new UserDTO("admin", "adminpass", true);
+        normalUserDTO = new UserDTO("user1", "password", false);
         room1 = new Room("Room1", RoomType.MEETING_ROOM);
         room2 = new Room("Room2", RoomType.MEETING_ROOM);
     }
 
-    /**
-     * Tests the creation of a booking.
-     * Steps:
-     * 1. Mock the repository to return an empty list for room availability.
-     * 2. Call the createBooking method.
-     * 3. Verify that the booking is saved in the repository.
-     * Expected result: The booking is created and saved in the repository.
-     */
     @Test
+    @DisplayName("Should create booking if room is available")
     public void testCreateBooking() {
-        String startTime = "2024-06-20T10";
-        String endTime = "2024-06-20T11";
-        LocalDateTime start = LocalDateTime.parse(startTime, dateFormatter);
-        LocalDateTime end = LocalDateTime.parse(endTime, dateFormatter);
+        BookingDTO bookingDTO = new BookingDTO("User", "Room1", LocalDateTime.parse("2024-06-20T10", dateFormatter), LocalDateTime.parse("2024-06-20T11", dateFormatter));
 
-        when(bookingRepository.findByRoom(room1)).thenReturn(Collections.emptyList());
+        when(bookingRepository.findByRoomName("Room1")).thenReturn(Collections.emptyList());
+        when(bookingService.isRoomAvailable("Room1", bookingDTO.startTime(), bookingDTO.endTime())).thenReturn(true);
+        when(bookingService.findRoomByName("Room1")).thenReturn(room1);
 
-        bookingService.createBooking(normalUser, room1, startTime, endTime);
+        Optional<BookingDTO> createdBooking = bookingService.createBooking(normalUserDTO, bookingDTO);
 
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(createdBooking).isPresent();
+        softly.assertThat(createdBooking.get().roomName()).isEqualTo("Room1");
         verify(bookingRepository, times(1)).save(any(Booking.class));
-        verify(bookingRepository, times(1)).findByRoom(room1);
+        softly.assertAll();
     }
 
-    /**
-     * Tests the creation of a booking when the time is not available.
-     * Steps:
-     * 1. Mock the repository to return an existing booking.
-     * 2. Call the createBooking method.
-     * 3. Verify that the booking is not saved in the repository.
-     * Expected result: The booking is not created and not saved in the repository.
-     */
     @Test
+    @DisplayName("Should not create booking if room is not available")
     public void testCreateBookingTimeNotAvailable() {
-        String startTime = "2024-06-20T10";
-        String endTime = "2024-06-20T11";
-        LocalDateTime start = LocalDateTime.parse(startTime, dateFormatter);
-        LocalDateTime end = LocalDateTime.parse(endTime, dateFormatter);
+        BookingDTO bookingDTO = new BookingDTO("User", "Room1", LocalDateTime.parse("2024-06-20T10", dateFormatter), LocalDateTime.parse("2024-06-20T11", dateFormatter));
+        Booking existingBooking = new Booking(new User("user1", "password"), room1, bookingDTO.startTime(), bookingDTO.endTime());
 
-        Booking existingBooking = new Booking(normalUser, room1, start, end);
-        when(bookingRepository.findByRoom(room1)).thenReturn(List.of(existingBooking));
+        when(bookingRepository.findByRoomName("Room1")).thenReturn(List.of(existingBooking));
+        when(bookingService.isRoomAvailable("Room1", bookingDTO.startTime(), bookingDTO.endTime())).thenReturn(false);
 
-        bookingService.createBooking(normalUser, room1, startTime, endTime);
+        Optional<BookingDTO> createdBooking = bookingService.createBooking(normalUserDTO, bookingDTO);
 
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(createdBooking).isNotPresent();
         verify(bookingRepository, never()).save(any(Booking.class));
+        softly.assertAll();
     }
 
-    /**
-     * Tests the retrieval of available hours for a room on a specific date.
-     * Steps:
-     * 1. Mock the repository to return an existing booking.
-     * 2. Call the getAvailableHours method.
-     * 3. Verify the available hours.
-     * Expected result: The available hours do not include the booked time.
-     */
     @Test
+    @DisplayName("Should get available hours for a room")
     public void testGetAvailableHours() {
         String startTime = "2024-06-20T10";
         String endTime = "2024-06-20T11";
         LocalDateTime start = LocalDateTime.parse(startTime, dateFormatter);
         LocalDateTime end = LocalDateTime.parse(endTime, dateFormatter);
 
-        Booking existingBooking = new Booking(normalUser, room1, start, end);
-        when(bookingRepository.findByRoom(room1)).thenReturn(List.of(existingBooking));
+        Booking existingBooking = new Booking(new User("user1", "password"), room1, start, end);
+        when(bookingRepository.findByRoomName("Room1")).thenReturn(List.of(existingBooking));
+        when(bookingService.findRoomByName("Room1")).thenReturn(room1);
 
-        List<LocalTime> availableHours = bookingService.getAvailableHours(LocalDate.parse("2024-06-20"), room1);
+        Optional<List<LocalTime>> availableHours = bookingService.getAvailableHours(LocalDate.parse("2024-06-20", DateTimeFormatter.ISO_DATE), "Room1");
 
-        assertThat(availableHours).doesNotContain(LocalTime.of(10, 0));
-        assertThat(availableHours).contains(LocalTime.of(9, 0), LocalTime.of(11, 0));
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(availableHours).isPresent();
+        softly.assertThat(availableHours.get()).doesNotContain(LocalTime.of(10, 0));
+        softly.assertThat(availableHours.get()).contains(LocalTime.of(9, 0), LocalTime.of(11, 0));
+        softly.assertAll();
     }
 
-    /**
-     * Tests the update of a booking by the booking creator.
-     * Steps:
-     * 1. Mock the repository to return an existing booking.
-     * 2. Call the updateBooking method.
-     * 3. Verify that the booking is updated with the new times.
-     * Expected result: The booking is updated with the new times.
-     */
     @Test
+    @DisplayName("Should update booking by creator")
     public void testUpdateBooking() {
         String originalStartTime = "2024-06-20T10";
         String newStartTime = "2024-06-20T12";
@@ -134,35 +111,33 @@ public class BookingServiceTest {
         LocalDateTime newStart = LocalDateTime.parse(newStartTime, dateFormatter);
         LocalDateTime newEnd = LocalDateTime.parse(newEndTime, dateFormatter);
 
-        Booking booking = new Booking(normalUser, room1, originalStart, LocalDateTime.parse("2024-06-20T11", dateFormatter));
-        when(bookingRepository.findByRoomAndTime(originalStart, room1)).thenReturn(Optional.of(booking));
-        when(bookingService.isRoomAvailable(room2, newStart, newEnd)).thenReturn(true);
+        Booking booking = new Booking(new User("user1", "password"), room1, originalStart, LocalDateTime.parse("2024-06-20T11", dateFormatter));
+        when(bookingRepository.findByRoomAndTime(originalStart, "Room1")).thenReturn(Optional.of(booking));
+        when(bookingService.isRoomAvailable("Room2", newStart, newEnd)).thenReturn(true);
+        when(bookingService.findRoomByName("Room2")).thenReturn(room2);
 
-        bookingService.updateBooking(normalUser, room1, originalStartTime, room2, newStartTime, newEndTime);
+        boolean updated = bookingService.updateBooking(normalUserDTO, "Room1", originalStart, "Room2", newStart, newEnd);
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(updated).isTrue();
 
         ArgumentCaptor<Booking> oldBookingCaptor = ArgumentCaptor.forClass(Booking.class);
         ArgumentCaptor<Booking> newBookingCaptor = ArgumentCaptor.forClass(Booking.class);
 
-        verify(bookingRepository, times(1)).update(oldBookingCaptor.capture(), newBookingCaptor.capture());
+        verify(bookingRepository).update(oldBookingCaptor.capture(), newBookingCaptor.capture());
 
         Booking capturedOldBooking = oldBookingCaptor.getValue();
         Booking capturedNewBooking = newBookingCaptor.getValue();
 
-        assertThat(capturedOldBooking).isEqualTo(booking);
-        assertThat(capturedNewBooking.getStartTime()).isEqualTo(newStart);
-        assertThat(capturedNewBooking.getEndTime()).isEqualTo(newEnd);
-        assertThat(capturedNewBooking.getRoom()).isEqualTo(room2);
+        softly.assertThat(capturedOldBooking).isEqualTo(booking);
+        softly.assertThat(capturedNewBooking.getStartTime()).isEqualTo(newStart);
+        softly.assertThat(capturedNewBooking.getEndTime()).isEqualTo(newEnd);
+        softly.assertThat(capturedNewBooking.getRoom()).isEqualTo(room2);
+        softly.assertAll();
     }
 
-    /**
-     * Tests the update of a booking by an admin user.
-     * Steps:
-     * 1. Mock the repository to return an existing booking.
-     * 2. Call the updateBooking method.
-     * 3. Verify that the booking is updated with the new times.
-     * Expected result: The booking is updated with the new times.
-     */
     @Test
+    @DisplayName("Should update booking by admin")
     public void testUpdateBookingAsAdmin() {
         String originalStartTime = "2024-06-20T10";
         String newStartTime = "2024-06-20T12";
@@ -171,181 +146,142 @@ public class BookingServiceTest {
         LocalDateTime newStart = LocalDateTime.parse(newStartTime, dateFormatter);
         LocalDateTime newEnd = LocalDateTime.parse(newEndTime, dateFormatter);
 
-        Booking booking = new Booking(adminUser, room1, originalStart, LocalDateTime.parse("2024-06-20T11", dateFormatter));
-        when(bookingRepository.findByRoomAndTime(originalStart, room1)).thenReturn(Optional.of(booking));
-        when(bookingService.isRoomAvailable(room2, newStart, newEnd)).thenReturn(true);
+        Booking booking = new Booking(new User("admin", "adminpass"), room1, originalStart, LocalDateTime.parse("2024-06-20T11", dateFormatter));
+        when(bookingRepository.findByRoomAndTime(originalStart, "Room1")).thenReturn(Optional.of(booking));
+        when(bookingService.isRoomAvailable("Room2", newStart, newEnd)).thenReturn(true);
+        when(bookingService.findRoomByName("Room2")).thenReturn(room2);
 
-        bookingService.updateBooking(adminUser, room1, originalStartTime, room2, newStartTime, newEndTime);
+        boolean updated = bookingService.updateBooking(adminUserDTO, "Room1", originalStart, "Room2", newStart, newEnd);
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(updated).isTrue();
 
         ArgumentCaptor<Booking> oldBookingCaptor = ArgumentCaptor.forClass(Booking.class);
         ArgumentCaptor<Booking> newBookingCaptor = ArgumentCaptor.forClass(Booking.class);
 
-        verify(bookingRepository, times(1)).update(oldBookingCaptor.capture(), newBookingCaptor.capture());
+        verify(bookingRepository).update(oldBookingCaptor.capture(), newBookingCaptor.capture());
 
         Booking capturedOldBooking = oldBookingCaptor.getValue();
         Booking capturedNewBooking = newBookingCaptor.getValue();
 
-        assertThat(capturedOldBooking).isEqualTo(booking);
-        assertThat(capturedNewBooking.getStartTime()).isEqualTo(newStart);
-        assertThat(capturedNewBooking.getEndTime()).isEqualTo(newEnd);
-        assertThat(capturedNewBooking.getRoom()).isEqualTo(room2);
+        softly.assertThat(capturedOldBooking).isEqualTo(booking);
+        softly.assertThat(capturedNewBooking.getStartTime()).isEqualTo(newStart);
+        softly.assertThat(capturedNewBooking.getEndTime()).isEqualTo(newEnd);
+        softly.assertThat(capturedNewBooking.getRoom()).isEqualTo(room2);
+        softly.assertAll();
     }
 
-    /**
-     * Tests the update of a booking that does not exist.
-     * Steps:
-     * 1. Mock the repository to return an empty Optional.
-     * 2. Call the updateBooking method.
-     * 3. Verify that the booking is not updated.
-     * Expected result: The booking is not found and not updated.
-     */
     @Test
+    @DisplayName("Should not update non-existing booking")
     public void testUpdateBookingBookingNotFound() {
         String originalStartTime = "2024-06-20T10";
         String newStartTime = "2024-06-20T12";
         String newEndTime = "2024-06-20T13";
         LocalDateTime originalStart = LocalDateTime.parse(originalStartTime, dateFormatter);
-        when(bookingRepository.findByRoomAndTime(originalStart, room1)).thenReturn(Optional.empty());
 
-        bookingService.updateBooking(normalUser, room1, originalStartTime, room2, newStartTime, newEndTime);
+        when(bookingRepository.findByRoomAndTime(originalStart, "Room1")).thenReturn(Optional.empty());
 
-        verify(bookingRepository, times(1)).findByRoomAndTime(originalStart, room1);
+        boolean updated = bookingService.updateBooking(normalUserDTO, "Room1", originalStart, "Room2", LocalDateTime.parse("2024-06-20T16", dateFormatter), LocalDateTime.parse("2024-06-20T17", dateFormatter));
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(updated).isFalse();
+        verify(bookingRepository, never()).update(any(Booking.class), any(Booking.class));
+        softly.assertAll();
     }
 
-    /**
-     * Tests the deletion of a booking by an admin user.
-     * Steps:
-     * 1. Mock the repository to return an existing booking.
-     * 2. Call the deleteBooking method.
-     * 3. Verify that the booking is deleted from the repository.
-     * Expected result: The booking is deleted from the repository.
-     */
     @Test
+    @DisplayName("Should delete booking by admin")
     public void testDeleteBookingAsAdmin() {
         String startTime = "2024-06-20T10";
         LocalDateTime start = LocalDateTime.parse(startTime, dateFormatter);
 
-        Booking existingBooking = new Booking(normalUser, room1, start, LocalDateTime.parse("2024-06-20T11", dateFormatter));
-        when(bookingRepository.findByRoomAndTime(start, room1)).thenReturn(Optional.of(existingBooking));
+        Booking existingBooking = new Booking(new User("user1", "password"), room1, start, LocalDateTime.parse("2024-06-20T11", dateFormatter));
+        when(bookingRepository.findByRoomAndTime(start, "Room1")).thenReturn(Optional.of(existingBooking));
 
-        bookingService.deleteBooking(adminUser, room1, start);
+        boolean deleted = bookingService.deleteBooking(adminUserDTO, "Room1", start);
 
-        verify(bookingRepository, times(1)).delete(existingBooking);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(deleted).isTrue();
+        verify(bookingRepository).delete(existingBooking);
+        softly.assertAll();
     }
 
-    /**
-     * Tests the deletion of a booking by the booking creator.
-     * Steps:
-     * 1. Mock the repository to return an existing booking.
-     * 2. Call the deleteBooking method.
-     * 3. Verify that the booking is deleted from the repository.
-     * Expected result: The booking is deleted from the repository.
-     */
     @Test
+    @DisplayName("Should delete booking by creator")
     public void testDeleteBookingByCreator() {
         String startTime = "2024-06-20T10";
         LocalDateTime start = LocalDateTime.parse(startTime, dateFormatter);
 
-        Booking existingBooking = new Booking(normalUser, room1, start, LocalDateTime.parse("2024-06-20T11", dateFormatter));
-        when(bookingRepository.findByRoomAndTime(start, room1)).thenReturn(Optional.of(existingBooking));
+        Booking existingBooking = new Booking(new User("user1", "password"), room1, start, LocalDateTime.parse("2024-06-20T11", dateFormatter));
+        when(bookingRepository.findByRoomAndTime(start, "Room1")).thenReturn(Optional.of(existingBooking));
 
-        bookingService.deleteBooking(normalUser, room1, start);
+        boolean deleted = bookingService.deleteBooking(normalUserDTO, "Room1", start);
 
-        verify(bookingRepository, times(1)).delete(existingBooking);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(deleted).isTrue();
+        verify(bookingRepository).delete(existingBooking);
+        softly.assertAll();
     }
 
-    /**
-     * Tests the deletion of a booking by an unauthorized user.
-     * Steps:
-     * 1. Mock the repository to return an existing booking.
-     * 2. Call the deleteBooking method.
-     * 3. Verify that the booking is not deleted from the repository.
-     * Expected result: The booking is not deleted from the repository.
-     */
     @Test
+    @DisplayName("Should not delete booking by unauthorized user")
     public void testDeleteBookingUnauthorizedUser() {
         String startTime = "2024-06-20T10";
         LocalDateTime start = LocalDateTime.parse(startTime, dateFormatter);
 
-        Booking existingBooking = new Booking(normalUser, room1, start, LocalDateTime.parse("2024-06-20T11", dateFormatter));
-        when(bookingRepository.findByRoomAndTime(start, room1)).thenReturn(Optional.of(existingBooking));
+        Booking existingBooking = new Booking(new User("user1", "password"), room1, start, LocalDateTime.parse("2024-06-20T11", dateFormatter));
+        when(bookingRepository.findByRoomAndTime(start, "Room1")).thenReturn(Optional.of(existingBooking));
 
-        bookingService.deleteBooking(new User("user2", "password2", false), room1, start);
+        boolean deleted = bookingService.deleteBooking(new UserDTO("user2", "password2", false), "Room1", start);
 
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(deleted).isFalse();
         verify(bookingRepository, never()).delete(existingBooking);
+        softly.assertAll();
     }
 
-    /**
-     * Tests the filtering of bookings by date.
-     * Steps:
-     * 1. Mock the repository to return a list of bookings.
-     * 2. Call the filterBookings method.
-     * 3. Verify the filtered bookings.
-     * Expected result: The bookings are filtered by date.
-     */
     @Test
+    @DisplayName("Should filter bookings by date")
     public void testFilterBookingsByDate() {
-        String startTime1 = "2024-06-20T10";
-        String endTime1 = "2024-06-20T11";
-        String startTime2 = "2024-06-21T10";
-        String endTime2 = "2024-06-21T11";
-        LocalDateTime filterDate = LocalDateTime.parse("2024-06-20T10", dateFormatter);
+        LocalDate filterDate = LocalDate.parse("2024-06-20", DateTimeFormatter.ISO_DATE);
+        Booking booking = new Booking(new User("user1", "password"), room1, LocalDateTime.parse("2024-06-20T10", dateFormatter), LocalDateTime.parse("2024-06-20T11", dateFormatter));
 
-        Booking booking1 = new Booking(normalUser, room1, LocalDateTime.parse(startTime1, dateFormatter), LocalDateTime.parse(endTime1, dateFormatter));
-        Booking booking2 = new Booking(normalUser, room1, LocalDateTime.parse(startTime2, dateFormatter), LocalDateTime.parse(endTime2, dateFormatter));
-        when(bookingRepository.findByDate(filterDate)).thenReturn(List.of(booking1));
+        when(bookingRepository.findByDate(filterDate)).thenReturn(List.of(booking));
 
-        List<Booking> filteredBookings = bookingService.filterBookings(filterDate, null, null);
+        Optional<List<BookingDTO>> filteredBookings = bookingService.filterBookings(filterDate, null, null);
 
-        assertThat(filteredBookings).hasSize(1);
-        assertThat(filteredBookings.get(0).getStartTime().format(dateFormatter)).isEqualTo(startTime1);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(filteredBookings).isPresent();
+        softly.assertThat(filteredBookings.get()).hasSize(1);
+        softly.assertAll();
     }
 
-    /**
-     * Tests the filtering of bookings by user.
-     * Steps:
-     * 1. Mock the repository to return a list of bookings.
-     * 2. Call the filterBookings method.
-     * 3. Verify the filtered bookings.
-     * Expected result: The bookings are filtered by user.
-     */
     @Test
+    @DisplayName("Should filter bookings by user")
     public void testFilterBookingsByUser() {
-        String startTime1 = "2024-06-20T10";
-        String endTime1 = "2024-06-20T11";
-        LocalDateTime start = LocalDateTime.parse(startTime1, dateFormatter);
-        LocalDateTime end = LocalDateTime.parse(endTime1, dateFormatter);
+        Booking booking = new Booking(new User("user1", "password"), room1, LocalDateTime.parse("2024-06-20T10", dateFormatter), LocalDateTime.parse("2024-06-20T11", dateFormatter));
 
-        Booking booking1 = new Booking(normalUser, room1, start, end);
-        when(bookingRepository.findByUser(normalUser)).thenReturn(List.of(booking1));
+        when(bookingRepository.findByUserName("user1")).thenReturn(List.of(booking));
 
-        List<Booking> filteredBookings = bookingService.filterBookings(null, normalUser, null);
+        Optional<List<BookingDTO>> filteredBookings = bookingService.filterBookings(null, "user1", null);
 
-        assertThat(filteredBookings).hasSize(1);
-        assertThat(filteredBookings.get(0).getUser()).isEqualTo(normalUser);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(filteredBookings).isPresent();
+        softly.assertThat(filteredBookings.get()).hasSize(1);
+        softly.assertAll();
     }
 
-    /**
-     * Tests the filtering of bookings by room.
-     * Steps:
-     * 1. Mock the repository to return a list of bookings.
-     * 2. Call the filterBookings method.
-     * 3. Verify the filtered bookings.
-     * Expected result: The bookings are filtered by room.
-     */
     @Test
+    @DisplayName("Should filter bookings by room")
     public void testFilterBookingsByRoom() {
-        String startTime1 = "2024-06-20T10";
-        String endTime1 = "2024-06-20T11";
-        LocalDateTime start = LocalDateTime.parse(startTime1, dateFormatter);
-        LocalDateTime end = LocalDateTime.parse(endTime1, dateFormatter);
+        Booking booking = new Booking(new User("user1", "password"), room1, LocalDateTime.parse("2024-06-20T10", dateFormatter), LocalDateTime.parse("2024-06-20T11", dateFormatter));
 
-        Booking booking1 = new Booking(normalUser, room1, start, end);
-        when(bookingRepository.findByRoom(room1)).thenReturn(List.of(booking1));
+        when(bookingRepository.findByRoomName("Room1")).thenReturn(List.of(booking));
 
-        List<Booking> filteredBookings = bookingService.filterBookings(null, null, room1);
+        Optional<List<BookingDTO>> filteredBookings = bookingService.filterBookings(null, null, "Room1");
 
-        assertThat(filteredBookings).hasSize(1);
-        assertThat(filteredBookings.get(0).getRoom()).isEqualTo(room1);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(filteredBookings).isPresent();
+        softly.assertThat(filteredBookings.get()).hasSize(1);
+        softly.assertAll();
     }
 }

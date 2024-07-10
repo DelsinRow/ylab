@@ -1,8 +1,13 @@
 package com.sinaev.repositories;
 
-import com.sinaev.models.Room;
-import com.sinaev.models.RoomType;
-import org.junit.jupiter.api.*;
+import com.sinaev.models.entities.Room;
+import com.sinaev.models.enums.RoomType;
+import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -15,7 +20,6 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 
@@ -122,15 +126,8 @@ public class RoomRepositoryTest {
         }
     }
 
-    /**
-     * Test the method findAll in RoomRepository.
-     * Steps:
-     * 1. Create two rooms with different types.
-     * 2. Save both rooms to the database using RoomRepository.
-     * 3. Retrieve all rooms using RoomRepository.
-     * 4. Verify that the retrieved rooms match the saved rooms.
-     */
     @Test
+    @DisplayName("Should find all rooms")
     public void testFindAll() {
         Room room1 = new Room("Room1", RoomType.WORKSPACE);
         Room room2 = new Room("Room2", RoomType.MEETING_ROOM);
@@ -139,61 +136,44 @@ public class RoomRepositoryTest {
 
         List<Room> rooms = roomRepository.findAll();
 
-        assertThat(rooms).hasSize(2);
-        assertThat(rooms).extracting(Room::getName).containsExactlyInAnyOrder("Room1", "Room2");
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(rooms).hasSize(2);
+        softly.assertThat(rooms).extracting(Room::getName).containsExactlyInAnyOrder("Room1", "Room2");
+        softly.assertAll();
     }
 
-    /**
-     * Test the method findByName in RoomRepository.
-     * Steps:
-     * 1. Create a room with a specific name and type.
-     * 2. Save the room to the database using RoomRepository.
-     * 3. Retrieve the room by name using RoomRepository.
-     * 4. Verify that the retrieved room matches the saved room.
-     */
     @Test
+    @DisplayName("Should find room by name")
     public void testFindByName() {
         Room room = new Room("Room1", RoomType.WORKSPACE);
         roomRepository.save(room);
 
         Optional<Room> foundRoom = roomRepository.findByName("Room1");
 
-        assertThat(foundRoom).isPresent();
-        assertThat(foundRoom.get().getName()).isEqualTo("Room1");
-        assertThat(foundRoom.get().getType()).isEqualTo(RoomType.WORKSPACE);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(foundRoom).isPresent();
+        softly.assertThat(foundRoom.get().getName()).isEqualTo("Room1");
+        softly.assertThat(foundRoom.get().getType()).isEqualTo(RoomType.WORKSPACE);
+        softly.assertAll();
     }
 
-    /**
-     * Test the method save in RoomRepository.
-     * Steps:
-     * 1. Create a room with a specific name and type.
-     * 2. Save the room to the database using RoomRepository.
-     * 3. Retrieve the room by name using RoomRepository.
-     * 4. Verify that the retrieved room matches the saved room.
-     */
     @Test
+    @DisplayName("Should save room")
     public void testSave() {
         Room room = new Room("Room1", RoomType.WORKSPACE);
         roomRepository.save(room);
 
         Optional<Room> foundRoom = roomRepository.findByName("Room1");
 
-        assertThat(foundRoom).isPresent();
-        assertThat(foundRoom.get().getName()).isEqualTo("Room1");
-        assertThat(foundRoom.get().getType()).isEqualTo(RoomType.WORKSPACE);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(foundRoom).isPresent();
+        softly.assertThat(foundRoom.get().getName()).isEqualTo("Room1");
+        softly.assertThat(foundRoom.get().getType()).isEqualTo(RoomType.WORKSPACE);
+        softly.assertAll();
     }
 
-    /**
-     * Test the method update in RoomRepository.
-     * Steps:
-     * 1. Create an old room with a specific name and type.
-     * 2. Create a new room with an updated name and type.
-     * 3. Save the old room to the database using RoomRepository.
-     * 4. Update the old room to the new room using RoomRepository.
-     * 5. Retrieve the room by the new name using RoomRepository.
-     * 6. Verify that the retrieved room matches the updated room.
-     */
     @Test
+    @DisplayName("Should update room")
     public void testUpdate() {
         Room oldRoom = new Room("Room1", RoomType.WORKSPACE);
         Room newRoom = new Room("Room1Updated", RoomType.MEETING_ROOM);
@@ -202,21 +182,15 @@ public class RoomRepositoryTest {
 
         Optional<Room> foundRoom = roomRepository.findByName("Room1Updated");
 
-        assertThat(foundRoom).isPresent();
-        assertThat(foundRoom.get().getName()).isEqualTo("Room1Updated");
-        assertThat(foundRoom.get().getType()).isEqualTo(RoomType.MEETING_ROOM);
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(foundRoom).isPresent();
+        softly.assertThat(foundRoom.get().getName()).isEqualTo("Room1Updated");
+        softly.assertThat(foundRoom.get().getType()).isEqualTo(RoomType.MEETING_ROOM);
+        softly.assertAll();
     }
 
-    /**
-     * Test the method delete in RoomRepository.
-     * Steps:
-     * 1. Create a room with a specific name and type.
-     * 2. Save the room to the database using RoomRepository.
-     * 3. Delete the room from the database using RoomRepository.
-     * 4. Retrieve the room by name using RoomRepository.
-     * 5. Verify that the retrieved room is not present.
-     */
     @Test
+    @DisplayName("Should delete room")
     public void testDelete() {
         Room room = new Room("Room1", RoomType.WORKSPACE);
         roomRepository.save(room);
@@ -224,37 +198,30 @@ public class RoomRepositoryTest {
 
         Optional<Room> foundRoom = roomRepository.findByName("Room1");
 
-        assertThat(foundRoom).isNotPresent();
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(foundRoom).isNotPresent();
+        softly.assertAll();
     }
 
-    /**
-     * Test the method exists in RoomRepository.
-     * Steps:
-     * 1. Create a room with a specific name and type.
-     * 2. Save the room to the database using RoomRepository.
-     * 3. Check if the room exists in the database using RoomRepository.
-     * 4. Verify that the room exists.
-     */
     @Test
+    @DisplayName("Should check if room exists")
     public void testExists() {
         Room room = new Room("Room1", RoomType.WORKSPACE);
         roomRepository.save(room);
+        boolean exists = roomRepository.exists("Room1");
 
-        boolean exists = roomRepository.exists(room);
-
-        assertThat(exists).isTrue();
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(exists).isTrue();
+        softly.assertAll();
     }
 
-    /**
-     * Test the method findByName in RoomRepository for a non-existing room.
-     * Steps:
-     * 1. Attempt to retrieve a room by a non-existing name using RoomRepository.
-     * 2. Verify that the retrieved room is not present.
-     */
     @Test
+    @DisplayName("Should not find non-existing room by name")
     public void testNonExistingRoom() {
         Optional<Room> foundRoom = roomRepository.findByName("NonExistingRoom");
 
-        assertThat(foundRoom).isNotPresent();
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(foundRoom).isNotPresent();
+        softly.assertAll();
     }
 }
