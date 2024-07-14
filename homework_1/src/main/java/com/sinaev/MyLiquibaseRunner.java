@@ -1,17 +1,15 @@
 package com.sinaev;
 
-import com.sinaev.configs.LiquibaseProperties;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
 import liquibase.Liquibase;
-import liquibase.Scope;
-import liquibase.command.CommandScope;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -39,34 +37,6 @@ public class MyLiquibaseRunner {
             throw new RuntimeException("Failed to load PostgreSQL driver", e);
         }
     }
-
-
-//    public void runLiquibase() {
-//        System.out.println("Running Liquibase...");
-//        createSchema(defaultSchemaName);
-//        createSchema(entitySchemaName);
-//
-//        try {
-//            Scope.child(Scope.Attr.resourceAccessor, new ClassLoaderResourceAccessor(), () -> {
-//                CommandScope update = new CommandScope("update");
-//
-//                update.addArgumentValue("changelogFile", changelogFile);
-//                update.addArgumentValue("url", urlDb);
-//                update.addArgumentValue("username", usernameDb);
-//                update.addArgumentValue("password", passwordDb);
-//                update.addArgumentValue("defaultSchemaName", defaultSchemaName);
-//                update.addArgumentValue("entitySchemaName", entitySchemaName);
-//                update.addArgumentValue("databaseChangeLogTableName", databaseChangeLogTableName);
-//                update.addArgumentValue("databaseChangeLogLockTableName", databaseChangeLogLockTableName);
-//
-//                update.execute();
-//            });
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
-//
-//        System.out.println("Running Liquibase...DONE");
-//    }
 
     public void runLiquibase() {
         createSchema(entitySchemaName);

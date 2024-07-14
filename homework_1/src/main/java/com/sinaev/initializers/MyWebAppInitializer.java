@@ -1,5 +1,8 @@
-package com.sinaev.configs;
+package com.sinaev.initializers;
 
+import com.sinaev.configs.AppConfig;
+import com.sinaev.configs.SwaggerConfig;
+import com.sinaev.configs.WebConfig;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
@@ -8,17 +11,17 @@ public class MyWebAppInitializer extends AbstractAnnotationConfigDispatcherServl
 
     @Override
     protected Class<?>[] getRootConfigClasses() {
-        return new Class[] { AppConfig.class };
+        return new Class[]{AppConfig.class};
     }
 
     @Override
     protected Class<?>[] getServletConfigClasses() {
-        return new Class[] { WebConfig.class, SwaggerConfig.class};
+        return new Class[]{WebConfig.class, SwaggerConfig.class};
     }
 
     @Override
     protected String[] getServletMappings() {
-        return new String[] { "/" };
+        return new String[]{"/"};
     }
 
     @Override

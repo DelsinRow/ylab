@@ -19,19 +19,29 @@ import java.time.LocalDateTime;
 public class AuditAspect {
     private final AuditLogRepository auditLogRepository;
 
-    @Pointcut("execution(* com.sinaev.controllers.*.*(..)) && args(req,..)")
-    public void controllerMethods(HttpServletRequest req) {
+    @Pointcut("execution(* com.sinaev.controllers.*.*(..)) && args(javax.servlet.http.HttpServletRequest,..)")
+    public void controllerMethods() {
     }
 
-    @After("controllerMethods(req)")
-    public void logAfter(JoinPoint joinPoint, HttpServletRequest req) {
-        String username = getCurrentUsername(req);
-        String action = joinPoint.getSignature().getName();
-        LocalDateTime timestamp = LocalDateTime.now();
+    @After("controllerMethods()")
+    public void logAfter(JoinPoint joinPoint) {
+        HttpServletRequest req = null;
+        for (Object arg : joinPoint.getArgs()) {
+            if (arg instanceof HttpServletRequest) {
+                req = (HttpServletRequest) arg;
+                break;
+            }
+        }
 
-        AuditLog auditLog = new AuditLog(username, action, timestamp);
-        if (auditLogRepository != null) {
-            auditLogRepository.save(auditLog);
+        if (req != null) {
+            String username = getCurrentUsername(req);
+            String action = joinPoint.getSignature().getName();
+            LocalDateTime timestamp = LocalDateTime.now();
+
+            AuditLog auditLog = new AuditLog(username, action, timestamp);
+            if (auditLogRepository != null) {
+                auditLogRepository.save(auditLog);
+            }
         }
     }
 

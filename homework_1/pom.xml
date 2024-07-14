@@ -22,17 +22,16 @@
         <lombok.version>1.18.32</lombok.version>
         <mockito.version>5.11.0</mockito.version>
         <posgresql.version>42.7.3</posgresql.version>
-        <liquibase.version>4.24.0</liquibase.version>
+        <liquibase.version>4.3.5</liquibase.version>
         <testcontainers.version>1.19.7</testcontainers.version>
         <jackson.version>2.16.1</jackson.version>
         <lombok-mapstruct.version>0.2.0</lombok-mapstruct.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
-        <aspectj.version>1.9.20.1</aspectj.version>
         <jakarta.validation-api.version>3.1.0</jakarta.validation-api.version>
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
         <javax.el.version>3.0.0</javax.el.version>
         <spring.version>5.3.24</spring.version>
-        <servlet.version>6.0.0</servlet.version>
+        <servlet.version>4.0.1</servlet.version>
         <plugin.war.version>3.3.1</plugin.war.version>
         <maven.compiler.plugin.version>3.8.0</maven.compiler.plugin.version>
         <snakeyaml.version>1.29</snakeyaml.version>
@@ -62,19 +61,16 @@
             <version>2.10.5</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.springframework/spring-web -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
             <version>${spring.version}</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.springframework/spring-core -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
             <version>${spring.version}</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.springframework.data/spring-data-commons -->
         <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-commons</artifactId>
@@ -111,13 +107,11 @@
             <artifactId>spring-aop</artifactId>
             <version>${spring.version}</version>
         </dependency>
-        <!-- AspectJ Weaver -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-aspects</artifactId>
             <version>${spring.version}</version>
         </dependency>
-        <!-- Jackson Dataformat YAML -->
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
@@ -186,6 +180,7 @@
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -198,12 +193,12 @@
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>jakarta.servlet</groupId>-->
-<!--            <artifactId>jakarta.servlet-api</artifactId>-->
-<!--            <version>${servlet.version}</version>-->
-<!--            <scope>provided</scope>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <version>1.3.2</version>
+        </dependency>
+
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
@@ -252,38 +247,7 @@
 
     <build>
         <finalName>homework</finalName>
-<!--        <resources>-->
-<!--            <resource>-->
-<!--                <directory>src/main/resources</directory>-->
-<!--                <includes>-->
-<!--                    <include>**/*</include>-->
-<!--                </includes>-->
-<!--            </resource>-->
-<!--        </resources>-->
         <plugins>
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-resources-plugin</artifactId>-->
-<!--                <version>3.3.1</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <id>copy-resources</id>-->
-<!--                        <phase>validate</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>copy-resources</goal>-->
-<!--                        </goals>-->
-<!--                        <configuration>-->
-<!--                            <outputDirectory>${basedir}/target/classes</outputDirectory>-->
-<!--                            <resources>-->
-<!--                                <resource>-->
-<!--                                    <directory>${basedir}/src/main/resources</directory>-->
-<!--                                    <filtering>false</filtering>-->
-<!--                                </resource>-->
-<!--                            </resources>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -305,6 +269,7 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

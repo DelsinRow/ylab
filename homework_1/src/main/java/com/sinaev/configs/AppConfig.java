@@ -1,6 +1,9 @@
 package com.sinaev.configs;
 
-import com.sinaev.LiquibaseInitializer;
+import com.sinaev.factories.YamlPropertySourceFactory;
+import com.sinaev.initializers.LiquibaseInitializer;
+import com.sinaev.configs.properties.DatasourceProperties;
+import com.sinaev.configs.properties.LiquibaseProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -16,7 +19,6 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
  */
 @Configuration
 @EnableAspectJAutoProxy
-//@EnableWebMvc
 @ComponentScan(basePackages = "com.sinaev")
 @PropertySource(value = "classpath:application.yml", factory = YamlPropertySourceFactory.class)
 @RequiredArgsConstructor
@@ -34,6 +36,7 @@ public class AppConfig {
         config.setDatabaseChangeLogLockTableName(env.getProperty("liquibase.database-change-log-lock-table"));
         return config;
     }
+
     @Bean
     public DatasourceProperties dataSourceProperties() {
         DatasourceProperties props = new DatasourceProperties();
