@@ -1,6 +1,7 @@
 package com.sinaev.models.entities;
 
 import com.sinaev.models.enums.RoomType;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,6 +10,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@EqualsAndHashCode(of = {"name", "type"})
 public class Room {
     /**
      * The id of the room.

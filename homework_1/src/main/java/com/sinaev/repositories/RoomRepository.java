@@ -4,7 +4,9 @@ import com.sinaev.handlers.SQLQueryHandler;
 import com.sinaev.models.entities.Room;
 import com.sinaev.models.enums.RoomType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -17,11 +19,10 @@ import java.util.Optional;
 /**
  * Repository for managing rooms.
  */
+@Repository
 @RequiredArgsConstructor
 public class RoomRepository {
-    private final String urlDB;
-    private final String userDB;
-    private final String passwordDB;
+    private final DataSource dataSource;
 
     /**
      * Finds all rooms in the database.
@@ -32,7 +33,7 @@ public class RoomRepository {
         List<Room> rooms = new ArrayList<>();
         String findAllSQL = "SELECT * FROM rooms";
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(findAllSQL)) {
 
             changeSearchPath(connection);
@@ -59,7 +60,7 @@ public class RoomRepository {
         String selectSQL = "SELECT * FROM rooms WHERE room_name = ?";
         Room foundRoom = null;
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
 
             changeSearchPath(connection);
@@ -89,7 +90,7 @@ public class RoomRepository {
     public void update(Room oldRoom, Room newRoom) {
         String updateSQL = "UPDATE rooms SET room_name = ?, room_type = ?::roomtype WHERE room_name = ?";
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(updateSQL)) {
 
             changeSearchPath(connection);
@@ -117,7 +118,7 @@ public class RoomRepository {
     public void save(Room room) {
         String saveSQL = "INSERT INTO rooms(room_name, room_type) VALUES (?, ?::roomtype)";
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(saveSQL)) {
 
             changeSearchPath(connection);
@@ -140,7 +141,7 @@ public class RoomRepository {
         String roomName = room.getName();
         String deleteSQL = "DELETE FROM rooms WHERE room_name = ?";
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(deleteSQL)) {
 
             changeSearchPath(connection);
@@ -167,7 +168,7 @@ public class RoomRepository {
     public boolean exists(String roomName) {
         String selectSQL = "SELECT * FROM rooms WHERE room_name = ?";
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
 
             changeSearchPath(connection);

@@ -1,36 +1,31 @@
 package com.sinaev;
 
-import com.sinaev.aspects.AuditAspect;
-import com.sinaev.configs.LiquibaseConfig;
-import com.sinaev.repositories.AuditLogRepository;
-import jakarta.servlet.ServletContextEvent;
-import jakarta.servlet.ServletContextListener;
-import jakarta.servlet.annotation.WebListener;
-
-@WebListener
-public class LiquibaseInitializer implements ServletContextListener {
-    @Override
-    public void contextInitialized(ServletContextEvent sce) {
-        LiquibaseConfig lbConfig = new LiquibaseConfig();
+import com.sinaev.configs.DatasourceProperties;
+import com.sinaev.configs.LiquibaseProperties;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+@Component
+@RequiredArgsConstructor
+public class LiquibaseInitializer{
+    private final LiquibaseProperties lbPropsl;
+    private final DatasourceProperties dbProps;
+    @PostConstruct
+    public void init() {
 
         MyLiquibaseRunner liquibaseRunner = MyLiquibaseRunner.builder()
-                .changelogFile(lbConfig.getChangeLogFile())
-                .urlDb(lbConfig.getDbUrl())
-                .usernameDb(lbConfig.getDbUser())
-                .passwordDb(lbConfig.getDbPassword())
-                .defaultSchemaName(lbConfig.getDefaultSchemaName())
-                .entitySchemaName(lbConfig.getEntitySchemaName())
-                .databaseChangeLogTableName(lbConfig.getDatabaseChangeLogTableName())
-                .databaseChangeLogTableName(lbConfig.getDatabaseChangeLogLockTableName())
+                .changelogFile(lbPropsl.getChangeLogFile())
+                .urlDb(dbProps.getUrl())
+                .usernameDb(dbProps.getUsername())
+                .passwordDb(dbProps.getPassword())
+                .defaultSchemaName(lbPropsl.getDefaultSchemaName())
+                .entitySchemaName(lbPropsl.getEntitySchemaName())
+                .databaseChangeLogTableName(lbPropsl.getDatabaseChangeLogTableName())
+                .databaseChangeLogTableName(lbPropsl.getDatabaseChangeLogLockTableName())
                 .build();
 
         liquibaseRunner.runLiquibase();
 
-        AuditLogRepository auditLogRepository = new AuditLogRepository(
-                lbConfig.getDbUrl(),
-                lbConfig.getDbUser(),
-                lbConfig.getDbPassword());
-        AuditAspect.init(auditLogRepository);
     }
 
 }

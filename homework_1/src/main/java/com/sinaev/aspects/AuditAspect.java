@@ -4,29 +4,26 @@ import com.sinaev.models.dto.UserDTO;
 import com.sinaev.models.entities.AuditLog;
 import com.sinaev.repositories.AuditLogRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
 @Aspect
+@Component
+@RequiredArgsConstructor
 public class AuditAspect {
-    private static AuditLogRepository auditLogRepository;
+    private final AuditLogRepository auditLogRepository;
 
-    public AuditAspect() {
+    @Pointcut("execution(* com.sinaev.controllers.*.*(..)) && args(req,..)")
+    public void controllerMethods(HttpServletRequest req) {
     }
 
-    public static void init(AuditLogRepository repository) {
-        auditLogRepository = repository;
-    }
-
-    @Pointcut("execution(* com.sinaev.servlets.*.*(..)) && args(req,..)")
-    public void servletMethods(HttpServletRequest req) {
-    }
-
-    @After("servletMethods(req)")
+    @After("controllerMethods(req)")
     public void logAfter(JoinPoint joinPoint, HttpServletRequest req) {
         String username = getCurrentUsername(req);
         String action = joinPoint.getSignature().getName();

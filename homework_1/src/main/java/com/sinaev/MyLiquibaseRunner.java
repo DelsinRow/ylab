@@ -1,7 +1,14 @@
 package com.sinaev;
 
+import com.sinaev.configs.LiquibaseProperties;
+import liquibase.Contexts;
+import liquibase.LabelExpression;
+import liquibase.Liquibase;
 import liquibase.Scope;
 import liquibase.command.CommandScope;
+import liquibase.database.Database;
+import liquibase.database.DatabaseFactory;
+import liquibase.database.jvm.JdbcConnection;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
@@ -33,41 +40,54 @@ public class MyLiquibaseRunner {
         }
     }
 
-    /**
-     * Runs the Liquibase update command.
-     */
+
+//    public void runLiquibase() {
+//        System.out.println("Running Liquibase...");
+//        createSchema(defaultSchemaName);
+//        createSchema(entitySchemaName);
+//
+//        try {
+//            Scope.child(Scope.Attr.resourceAccessor, new ClassLoaderResourceAccessor(), () -> {
+//                CommandScope update = new CommandScope("update");
+//
+//                update.addArgumentValue("changelogFile", changelogFile);
+//                update.addArgumentValue("url", urlDb);
+//                update.addArgumentValue("username", usernameDb);
+//                update.addArgumentValue("password", passwordDb);
+//                update.addArgumentValue("defaultSchemaName", defaultSchemaName);
+//                update.addArgumentValue("entitySchemaName", entitySchemaName);
+//                update.addArgumentValue("databaseChangeLogTableName", databaseChangeLogTableName);
+//                update.addArgumentValue("databaseChangeLogLockTableName", databaseChangeLogLockTableName);
+//
+//                update.execute();
+//            });
+//        } catch (Exception e) {
+//            throw new RuntimeException(e);
+//        }
+//
+//        System.out.println("Running Liquibase...DONE");
+//    }
+
     public void runLiquibase() {
-        System.out.println("Running Liquibase...");
-        createSchema(defaultSchemaName);
         createSchema(entitySchemaName);
+        createSchema(defaultSchemaName);
 
-        try {
-            Scope.child(Scope.Attr.resourceAccessor, new ClassLoaderResourceAccessor(), () -> {
-                CommandScope update = new CommandScope("update");
+        try (Connection connection = DriverManager.getConnection(urlDb, usernameDb, passwordDb)) {
+            Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
 
-                update.addArgumentValue("changelogFile", changelogFile);
-                update.addArgumentValue("url", urlDb);
-                update.addArgumentValue("username", usernameDb);
-                update.addArgumentValue("password", passwordDb);
-                update.addArgumentValue("defaultSchemaName", defaultSchemaName);
-                update.addArgumentValue("entitySchemaName", entitySchemaName);
-                update.addArgumentValue("databaseChangeLogTableName", databaseChangeLogTableName);
-                update.addArgumentValue("databaseChangeLogLockTableName", databaseChangeLogLockTableName);
+            database.setDefaultSchemaName(defaultSchemaName);
+            database.setLiquibaseCatalogName(entitySchemaName);
+            database.setDatabaseChangeLogTableName(databaseChangeLogTableName);
+            database.setDatabaseChangeLogLockTableName(databaseChangeLogLockTableName);
 
-                update.execute();
-            });
+
+            Liquibase liquibase = new Liquibase(changelogFile, new ClassLoaderResourceAccessor(), database);
+            liquibase.update(new Contexts(), new LabelExpression());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error running Liquibase", e);
         }
-
-        System.out.println("Running Liquibase...DONE");
     }
 
-    /**
-     * Creates the specified schema if it does not exist.
-     *
-     * @param schemaName the name of the schema to create
-     */
     private void createSchema(String schemaName) {
         String createSchemaSQL = "CREATE SCHEMA IF NOT EXISTS " + schemaName;
 

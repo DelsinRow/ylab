@@ -1,64 +1,50 @@
 package com.sinaev.configs;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
+import com.sinaev.LiquibaseInitializer;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.env.Environment;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 /**
  * Configuration class that loads properties from the application.properties file.
  */
+@Configuration
+@EnableAspectJAutoProxy
+//@EnableWebMvc
+@ComponentScan(basePackages = "com.sinaev")
+@PropertySource(value = "classpath:application.yml", factory = YamlPropertySourceFactory.class)
+@RequiredArgsConstructor
+@Import(DataSourceConfig.class)
 public class AppConfig {
+    private final Environment env;
 
-    private Properties properties = new Properties();
-
-    /**
-     * Constructs an AppConfig object and loads the properties from the application.properties file.
-     */
-    public AppConfig() {
-        try (InputStream input = getClass().getClassLoader().getResourceAsStream("application.properties")) {
-            if (input == null) {
-                System.out.println("Sorry, unable to find application.properties");
-                return;
-            }
-            properties.load(input);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
+    @Bean
+    public LiquibaseProperties liquibaseConfig() {
+        LiquibaseProperties config = new LiquibaseProperties();
+        config.setChangeLogFile(env.getProperty("liquibase.change-log"));
+        config.setDefaultSchemaName(env.getProperty("liquibase.default-schema"));
+        config.setEntitySchemaName(env.getProperty("liquibase.entity-schema"));
+        config.setDatabaseChangeLogTableName(env.getProperty("liquibase.database-change-log-table"));
+        config.setDatabaseChangeLogLockTableName(env.getProperty("liquibase.database-change-log-lock-table"));
+        return config;
+    }
+    @Bean
+    public DatasourceProperties dataSourceProperties() {
+        DatasourceProperties props = new DatasourceProperties();
+        props.setUrl(env.getProperty("spring.datasource.url"));
+        props.setUsername(env.getProperty("spring.datasource.username"));
+        props.setPassword(env.getProperty("spring.datasource.password"));
+        return props;
     }
 
-    /**
-     * Retrieves the database URL from the properties file.
-     *
-     * @return the database URL
-     */
-    public String getDbUrl() {
-        return properties.getProperty("database.url");
-    }
-
-    /**
-     * Retrieves the database username from the properties file.
-     *
-     * @return the database username
-     */
-    public String getDbUsername() {
-        return properties.getProperty("database.username");
-    }
-
-    /**
-     * Retrieves the database password from the properties file.
-     *
-     * @return the database password
-     */
-    public String getDbPassword() {
-        return properties.getProperty("database.password");
-    }
-
-    /**
-     * Retrieves the database schema from the properties file.
-     *
-     * @return the database schema
-     */
-    public String getSchema() {
-        return properties.getProperty("database.schema");
+    @Bean
+    public LiquibaseInitializer liquibaseInitializer(LiquibaseProperties liquibaseConfig, DatasourceProperties dataSourceConfig) {
+        return new LiquibaseInitializer(liquibaseConfig, dataSourceConfig);
     }
 }

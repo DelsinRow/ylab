@@ -6,7 +6,9 @@ import com.sinaev.models.entities.Room;
 import com.sinaev.models.entities.User;
 import com.sinaev.models.enums.RoomType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -23,11 +25,36 @@ import java.util.Optional;
 /**
  * Repository for managing bookings.
  */
+@Repository
 @RequiredArgsConstructor
 public class BookingRepository {
-    private final String urlDB;
-    private final String userDB;
-    private final String passwordDB;
+    private final DataSource dataSource;
+
+    public List<Booking> findAll() {
+        List<Booking> bookings = new ArrayList<>();
+        String findAllSQL = "SELECT * FROM entity_schema.bookings";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(findAllSQL)) {
+
+//            changeSearchPath(connection);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                long userId = resultSet.getLong("user_id");
+                User user = findUserById(userId);
+                long roomId = resultSet.getLong("room_id");
+                Room room = findRoomById(roomId);
+                LocalDateTime startTime = resultSet.getTimestamp("start_time").toLocalDateTime();
+                LocalDateTime endTime = resultSet.getTimestamp("end_time").toLocalDateTime();
+                Booking booking = new Booking(user, room, startTime, endTime);
+
+                bookings.add(booking);
+            }
+        } catch (SQLException e) {
+            System.out.println("Got SQL Exception " + e.getMessage());
+        }
+        return bookings;
+    }
 
     /**
      * Finds a booking by room and start time.
@@ -36,11 +63,11 @@ public class BookingRepository {
      * @param roomName  the name of room of the booking
      * @return an Optional containing the found booking, or an empty Optional if no booking is found
      */
-    public Optional<Booking> findByRoomAndTime(LocalDateTime startTime, String roomName) {
+    public Optional<Booking> findByRoomAndTime(String roomName,LocalDateTime startTime) {
         String findByRoomAndTimeSQL = "SELECT * FROM bookings WHERE start_time = ? AND room_id = ?";
         Booking foundBooking = null;
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(findByRoomAndTimeSQL)) {
 
             changeSearchPath(connection);
@@ -73,7 +100,7 @@ public class BookingRepository {
     public void save(Booking booking) {
         String saveSQL = "INSERT INTO bookings (user_id, room_id, start_time, end_time) VALUES (?, ?, ?, ?)";
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(saveSQL)) {
 
             changeSearchPath(connection);
@@ -103,7 +130,7 @@ public class BookingRepository {
     public void update(Booking oldBooking, Booking newBooking) {
         String updateSQL = "UPDATE bookings SET user_id = ?, room_id = ?, start_time = ?, end_time = ? WHERE room_id = ? AND start_time = ?";
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(updateSQL)) {
 
             changeSearchPath(connection);
@@ -134,7 +161,7 @@ public class BookingRepository {
     public void delete(Booking booking) {
         String deleteSQL = "DELETE FROM bookings WHERE user_id = ? AND room_id = ? AND start_time = ? AND end_time = ?";
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(deleteSQL)) {
 
             changeSearchPath(connection);
@@ -165,7 +192,7 @@ public class BookingRepository {
         List<Booking> bookings = new ArrayList<>();
         String findByRoomSQL = "SELECT * FROM bookings WHERE room_id = ?";
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(findByRoomSQL)) {
 
             changeSearchPath(connection);
@@ -200,7 +227,7 @@ public class BookingRepository {
         List<Booking> bookings = new ArrayList<>();
         String findByUserSQL = "SELECT * FROM bookings WHERE user_id = ?";
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(findByUserSQL)) {
 
             changeSearchPath(connection);
@@ -235,7 +262,7 @@ public class BookingRepository {
         List<Booking> bookings = new ArrayList<>();
         String findByDateSQL = "SELECT * FROM bookings WHERE start_time >= ? AND start_time < ?";
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(findByDateSQL)) {
 
             changeSearchPath(connection);
@@ -278,7 +305,7 @@ public class BookingRepository {
      */
     private long getUserId(String username) throws SQLException {
         String selectUserIdSQL = "SELECT id FROM users WHERE username = ?";
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(selectUserIdSQL)) {
 
             changeSearchPath(connection);
@@ -303,7 +330,7 @@ public class BookingRepository {
      */
     private long getRoomId(String roomName) throws SQLException {
         String selectRoomIdSQL = "SELECT id FROM rooms WHERE room_name = ?";
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(selectRoomIdSQL)) {
 
             changeSearchPath(connection);
@@ -330,7 +357,7 @@ public class BookingRepository {
         String selectUserSQL = "SELECT * FROM users WHERE id = ?";
         User user = null;
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(selectUserSQL)) {
 
             changeSearchPath(connection);
@@ -362,7 +389,7 @@ public class BookingRepository {
         String selectRoomSQL = "SELECT * FROM rooms WHERE id = ?";
         Room room = null;
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(selectRoomSQL)) {
 
             changeSearchPath(connection);
