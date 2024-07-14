@@ -8,7 +8,7 @@ import com.sinaev.models.requests.booking.GetAvailableHoursRequest;
 import com.sinaev.models.requests.booking.RemoveBookingRequest;
 import com.sinaev.models.requests.booking.UpdateBookingRequest;
 import com.sinaev.services.BookingService;
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;

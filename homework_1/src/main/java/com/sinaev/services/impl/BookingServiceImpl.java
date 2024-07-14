@@ -17,7 +17,7 @@ import com.sinaev.repositories.BookingRepository;
 import com.sinaev.repositories.RoomRepository;
 import com.sinaev.repositories.UserRepository;
 import com.sinaev.services.BookingService;
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

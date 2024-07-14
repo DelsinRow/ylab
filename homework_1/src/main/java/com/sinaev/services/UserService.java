@@ -1,7 +1,7 @@
 package com.sinaev.services;
 
 import com.sinaev.models.dto.UserDTO;
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
 

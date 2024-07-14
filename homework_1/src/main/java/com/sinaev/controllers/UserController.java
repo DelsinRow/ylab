@@ -3,15 +3,13 @@ package com.sinaev.controllers;
 import com.sinaev.exceptions.UsernameAlreadyTakenException;
 import com.sinaev.models.dto.UserDTO;
 import com.sinaev.services.UserService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.NoSuchElementException;
 
 @RestController

@@ -3,7 +3,7 @@ package com.sinaev.aspects;
 import com.sinaev.models.dto.UserDTO;
 import com.sinaev.models.entities.AuditLog;
 import com.sinaev.repositories.AuditLogRepository;
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.After;

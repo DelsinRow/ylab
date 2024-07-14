@@ -6,7 +6,7 @@ import com.sinaev.models.requests.booking.FilterBookingsRequest;
 import com.sinaev.models.requests.booking.GetAvailableHoursRequest;
 import com.sinaev.models.requests.booking.RemoveBookingRequest;
 import com.sinaev.models.requests.booking.UpdateBookingRequest;
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalTime;

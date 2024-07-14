@@ -3,7 +3,7 @@ package com.sinaev.services;
 import com.sinaev.models.dto.RoomDTO;
 import com.sinaev.models.dto.UserDTO;
 import com.sinaev.models.requests.room.UpdateRoomRequest;
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

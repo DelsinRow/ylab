@@ -10,7 +10,7 @@ import com.sinaev.models.enums.RoomType;
 import com.sinaev.models.requests.room.UpdateRoomRequest;
 import com.sinaev.repositories.RoomRepository;
 import com.sinaev.services.RoomService;
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

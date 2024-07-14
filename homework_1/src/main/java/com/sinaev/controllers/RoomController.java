@@ -5,7 +5,7 @@ import com.sinaev.models.dto.RoomDTO;
 import com.sinaev.models.dto.UserDTO;
 import com.sinaev.models.requests.room.UpdateRoomRequest;
 import com.sinaev.services.RoomService;
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;

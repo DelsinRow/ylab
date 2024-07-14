@@ -7,8 +7,8 @@ import com.sinaev.models.dto.UserDTO;
 import com.sinaev.models.entities.User;
 import com.sinaev.repositories.UserRepository;
 import com.sinaev.services.UserService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import org.springframework.stereotype.Service;
 
 import java.util.NoSuchElementException;
