@@ -187,20 +187,4 @@ public class BookingControllerTest {
         verify(bookingService, times(1)).filterBookings(request);
         softly.assertAll();
     }
-
-    @Test
-    @DisplayName("Test get all bookings")
-    public void testGetAllBookings() {
-        Booking booking1 = new Booking(null, null, LocalDateTime.now(), LocalDateTime.now().plusHours(1));
-        Booking booking2 = new Booking(null, null, LocalDateTime.now(), LocalDateTime.now().plusHours(2));
-        List<Booking> bookings = Arrays.asList(booking1, booking2);
-        when(bookingService.findAll()).thenReturn(bookings);
-
-        ResponseEntity<?> response = bookingController.filter();
-
-        softly.assertThat(response.getStatusCodeValue()).isEqualTo(200);
-        softly.assertThat(response.getBody()).isEqualTo(bookings);
-        verify(bookingService, times(1)).findAll();
-        softly.assertAll();
-    }
 }

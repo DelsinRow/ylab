@@ -12,29 +12,49 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.util.NoSuchElementException;
 
+/**
+ * UserController handles the user authentication and registration requests.
+ */
 @RestController
 @RequestMapping("/api/v1")
 public class UserController {
     private final UserService userService;
 
+    /**
+     * Constructs a UserController with the specified UserService.
+     *
+     * @param userService the service used to manage user-related operations
+     */
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
+    /**
+     * Authenticates a user and sets their details in the session.
+     *
+     * @param httpRequest the HTTP request containing session details
+     * @param userDTO     the user data transfer object containing login information
+     * @return a response entity indicating the result of the login operation
+     */
     @PostMapping("/auth")
     ResponseEntity<?> login(HttpServletRequest httpRequest,
                             @RequestBody UserDTO userDTO) {
         try {
             userService.login(httpRequest, userDTO);
             userService.setUserDTOInSession(httpRequest, userDTO);
-//            HttpSession session = httpRequest.getSession();
-//            session.setAttribute("loggedIn", userDTO);
             return ResponseEntity.ok().body("User logged successfully");
         } catch (NoSuchElementException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
+    /**
+     * Registers a new user and sets their details in the session.
+     *
+     * @param httpRequest the HTTP request containing session details
+     * @param userDTO     the user data transfer object containing registration information
+     * @return a response entity indicating the result of the registration operation
+     */
     @PostMapping("/register")
     ResponseEntity<?> register(HttpServletRequest httpRequest,
                                @RequestBody UserDTO userDTO) {

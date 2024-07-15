@@ -183,11 +183,6 @@ public class BookingServiceImpl implements BookingService {
         return filterResult.stream().map(BookingMapper.INSTANCE::toDTO).toList();
     }
 
-    @Override
-    public List<Booking> findAll() {
-        return bookingRepository.findAll();
-    }
-
     /**
      * Checks if a room is available in the specified time interval.
      *

@@ -7,21 +7,21 @@ import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+
 @Repository
 @RequiredArgsConstructor
 public class AuditLogRepository {
     private final DataSource dataSource;
 
     public void save(AuditLog auditLog) {
-        String saveSQL = "INSERT INTO entity_schema.audit_log (username, action, timestamp) VALUES (?, ?, ?)";
+        String saveSQL = "INSERT INTO audit_log (username, action, timestamp) VALUES (?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(saveSQL)) {
 
-//            changeSearchPath(connection);
+            changeSearchPath(connection);
 
             preparedStatement.setString(1, auditLog.getUsername());
             preparedStatement.setString(2, auditLog.getAction());

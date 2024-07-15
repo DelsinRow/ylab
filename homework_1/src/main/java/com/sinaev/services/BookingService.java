@@ -21,6 +21,5 @@ public interface BookingService {
     void deleteBooking(HttpServletRequest httpRequest, RemoveBookingRequest request);
 
     List<BookingDTO> filterBookings(FilterBookingsRequest request);
-    List<Booking> findAll();
 
 }

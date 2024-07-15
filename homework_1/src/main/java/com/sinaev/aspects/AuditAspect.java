@@ -3,21 +3,23 @@ package com.sinaev.aspects;
 import com.sinaev.models.dto.UserDTO;
 import com.sinaev.models.entities.AuditLog;
 import com.sinaev.repositories.AuditLogRepository;
-import javax.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 
 @Aspect
 @Component
-@RequiredArgsConstructor
 public class AuditAspect {
     private final AuditLogRepository auditLogRepository;
+
+    public AuditAspect(AuditLogRepository auditLogRepository) {
+        this.auditLogRepository = auditLogRepository;
+    }
 
     @Pointcut("execution(* com.sinaev.controllers.*.*(..)) && args(javax.servlet.http.HttpServletRequest,..)")
     public void controllerMethods() {

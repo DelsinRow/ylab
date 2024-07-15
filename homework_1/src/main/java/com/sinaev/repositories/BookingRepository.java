@@ -32,12 +32,12 @@ public class BookingRepository {
 
     public List<Booking> findAll() {
         List<Booking> bookings = new ArrayList<>();
-        String findAllSQL = "SELECT * FROM entity_schema.bookings";
+        String findAllSQL = "SELECT * FROM bookings";
 
         try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(findAllSQL)) {
 
-//            changeSearchPath(connection);
+            changeSearchPath(connection);
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 long userId = resultSet.getLong("user_id");
