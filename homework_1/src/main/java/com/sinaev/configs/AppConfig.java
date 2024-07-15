@@ -32,8 +32,6 @@ public class AppConfig {
         config.setChangeLogFile(env.getProperty("liquibase.change-log"));
         config.setDefaultSchemaName(env.getProperty("liquibase.default-schema"));
         config.setEntitySchemaName(env.getProperty("liquibase.entity-schema"));
-        config.setDatabaseChangeLogTableName(env.getProperty("liquibase.database-change-log-table"));
-        config.setDatabaseChangeLogLockTableName(env.getProperty("liquibase.database-change-log-lock-table"));
         return config;
     }
 
@@ -47,7 +45,7 @@ public class AppConfig {
     }
 
     @Bean
-    public LiquibaseInitializer liquibaseInitializer(LiquibaseProperties liquibaseConfig, DatasourceProperties dataSourceConfig) {
-        return new LiquibaseInitializer(liquibaseConfig, dataSourceConfig);
+    public LiquibaseInitializer liquibaseInitializer(LiquibaseProperties liquibaseProperties, DatasourceProperties datasourceProperties) {
+        return new LiquibaseInitializer(liquibaseProperties, datasourceProperties);
     }
 }

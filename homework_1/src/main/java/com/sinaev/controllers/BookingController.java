@@ -85,6 +85,7 @@ public class BookingController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
     /**
      * This method processes the delete request. If successful, it returns
      * a message indicating the booking was deleted.
@@ -103,6 +104,7 @@ public class BookingController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
     /**
      * This method returns a list of bookings that match the given filter criteria.
      *

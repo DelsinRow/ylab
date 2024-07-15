@@ -2,11 +2,8 @@ package com.sinaev.controllers;
 
 import com.sinaev.exceptions.ObjectAlreadyExistsException;
 import com.sinaev.models.dto.RoomDTO;
-import com.sinaev.models.dto.UserDTO;
 import com.sinaev.models.requests.room.UpdateRoomRequest;
 import com.sinaev.services.RoomService;
-import javax.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -72,8 +70,8 @@ public class RoomController {
      * This method processes the update request. If successful, it returns
      * a message indicating the room was updated.
      *
-     * @param httpRequest        the HTTP request containing session details
-     * @param updateRoomRequest  the request object containing updated room information
+     * @param httpRequest       the HTTP request containing session details
+     * @param updateRoomRequest the request object containing updated room information
      * @return a response entity indicating the result of the update operation
      */
     @PutMapping

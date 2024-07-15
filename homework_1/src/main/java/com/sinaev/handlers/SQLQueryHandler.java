@@ -14,7 +14,6 @@ import java.util.Properties;
 public class SQLQueryHandler {
 
     public void addSearchPathPrivate(Connection connection) {
-//        String schemaName = properties.getProperty("database.schema");
         String setSQL = "SET search_path TO entity_schema";
         try {
             Statement statement = connection.createStatement();

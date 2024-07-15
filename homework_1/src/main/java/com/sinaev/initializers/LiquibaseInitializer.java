@@ -28,8 +28,6 @@ public class LiquibaseInitializer {
                 .passwordDb(dbProps.getPassword())
                 .defaultSchemaName(lbProps.getDefaultSchemaName())
                 .entitySchemaName(lbProps.getEntitySchemaName())
-                .databaseChangeLogTableName(lbProps.getDatabaseChangeLogTableName())
-                .databaseChangeLogTableName(lbProps.getDatabaseChangeLogLockTableName())
                 .build();
 
         logger.info("Running Liquibase...");

@@ -47,9 +47,6 @@ public class MyLiquibaseRunner {
 
             database.setDefaultSchemaName(defaultSchemaName);
             database.setLiquibaseCatalogName(entitySchemaName);
-            database.setDatabaseChangeLogTableName(databaseChangeLogTableName);
-            database.setDatabaseChangeLogLockTableName(databaseChangeLogLockTableName);
-
 
             Liquibase liquibase = new Liquibase(changelogFile, new ClassLoaderResourceAccessor(), database);
             liquibase.update(new Contexts(), new LabelExpression());

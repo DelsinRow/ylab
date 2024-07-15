@@ -2,8 +2,6 @@ liquibase:
   change-log: db/changelog/changelog.xml
   default-schema: service_schema
   entity-schema: entity_schema
-  database-change-log-table: DATABASECHANGELOGLOCK
-  database-change-log-lock-table: DATABASECHANGELOG
 
 spring:
   datasource:
