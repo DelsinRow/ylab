@@ -3,6 +3,7 @@ package com.sinaev.controllers;
 import com.sinaev.exceptions.UsernameAlreadyTakenException;
 import com.sinaev.models.dto.UserDTO;
 import com.sinaev.services.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,17 +18,9 @@ import java.util.NoSuchElementException;
  */
 @RestController
 @RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
-
-    /**
-     * Constructs a UserController with the specified UserService.
-     *
-     * @param userService the service used to manage user-related operations
-     */
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
 
     /**
      * Authenticates a user and sets their details in the session.
@@ -41,7 +34,6 @@ public class UserController {
                             @RequestBody UserDTO userDTO) {
         try {
             userService.login(httpRequest, userDTO);
-            userService.setUserDTOInSession(httpRequest, userDTO);
             return ResponseEntity.ok().body("User logged successfully");
         } catch (NoSuchElementException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

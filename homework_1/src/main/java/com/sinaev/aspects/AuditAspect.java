@@ -3,6 +3,7 @@ package com.sinaev.aspects;
 import com.sinaev.models.dto.UserDTO;
 import com.sinaev.models.entities.AuditLog;
 import com.sinaev.repositories.AuditLogRepository;
+import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.AfterReturning;
@@ -21,17 +22,9 @@ import java.time.LocalDateTime;
  */
 @Aspect
 @Component
+@RequiredArgsConstructor
 public class AuditAspect {
     private final AuditLogRepository auditLogRepository;
-
-    /**
-     * Constructs an AuditAspect with the specified audit log repository.
-     *
-     * @param auditLogRepository the repository for managing audit logs
-     */
-    public AuditAspect(AuditLogRepository auditLogRepository) {
-        this.auditLogRepository = auditLogRepository;
-    }
 
     /**
      * Logs the action performed by a user after the execution of audited methods.
@@ -72,7 +65,10 @@ public class AuditAspect {
      */
     private String getCurrentUsername(HttpServletRequest req) {
         UserDTO userDTO = (UserDTO) req.getSession().getAttribute("loggedIn");
-        if (userDTO == null) return "unknown_user";
-        else return userDTO.username();
+        if (userDTO == null) {
+            return "unknown_user";
+        } else {
+            return userDTO.username();
+        }
     }
 }

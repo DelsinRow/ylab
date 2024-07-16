@@ -4,6 +4,7 @@ import com.sinaev.models.dto.UserDTO;
 import com.sinaev.models.entities.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
+import org.springframework.stereotype.Component;
 
 /**
  * Mapper interface for converting between User entities and UserDTOs.
@@ -12,9 +13,8 @@ import org.mapstruct.factory.Mappers;
  * between {@link User} and {@link UserDTO} objects.
  * </p>
  */
-@Mapper
+@Mapper(componentModel = "spring")
 public interface UserMapper {
-    UserMapper INSTANCE = Mappers.getMapper(UserMapper.class);
 
     /**
      * Converts a UserDTO to a User entity.

@@ -1,6 +1,8 @@
 package com.sinaev.services;
 
 import com.sinaev.exceptions.BookingIsNotAvailableException;
+import com.sinaev.mappers.BookingMapper;
+import com.sinaev.mappers.UserMapper;
 import com.sinaev.models.dto.BookingDTO;
 import com.sinaev.models.dto.UserDTO;
 import com.sinaev.models.entities.Booking;
@@ -15,11 +17,15 @@ import com.sinaev.repositories.RoomRepository;
 import com.sinaev.repositories.UserRepository;
 import com.sinaev.services.impl.BookingServiceImpl;
 import org.assertj.core.api.SoftAssertions;
+import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -31,93 +37,107 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith({MockitoExtension.class, SoftAssertionsExtension.class})
 public class BookingServiceTest {
 
-    private BookingService bookingService;
+    @InjectMocks
+    private BookingServiceImpl bookingService;
+
+    @Mock
     private BookingRepository bookingRepository;
+
+    @Mock
     private UserRepository userRepository;
+
+    @Mock
     private RoomRepository roomRepository;
+
+    @Mock
+    private BookingMapper bookingMapper;
+
+    @Mock
+    private UserMapper userMapper;
+
+    @Mock
     private HttpServletRequest httpRequest;
+
+    @Mock
     private HttpSession httpSession;
+
     private DateTimeFormatter dateFormatter;
+    private User normalUser;
     private UserDTO adminUserDTO;
     private UserDTO normalUserDTO;
     private Room room1;
     private Room room2;
 
+
     @BeforeEach
     public void setUp() {
         dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH");
-        bookingRepository = Mockito.mock(BookingRepository.class);
-        userRepository = Mockito.mock(UserRepository.class);
-        roomRepository = Mockito.mock(RoomRepository.class);
-        httpRequest = Mockito.mock(HttpServletRequest.class);
-        httpSession = Mockito.mock(HttpSession.class);
-        bookingService = new BookingServiceImpl(bookingRepository, userRepository, roomRepository);
         adminUserDTO = new UserDTO("admin", "adminpass", true);
         normalUserDTO = new UserDTO("user1", "password", false);
+        normalUser = new User("user1", "password", false);
         room1 = new Room("Room1", RoomType.MEETING_ROOM);
         room2 = new Room("Room2", RoomType.MEETING_ROOM);
 
-        when(httpRequest.getSession()).thenReturn(httpSession);
+        lenient().when(httpRequest.getSession()).thenReturn(httpSession);
     }
 
     @Test
     @DisplayName("Should create booking if room is available")
     public void testCreateBooking() {
-        BookingDTO bookingDTO = new BookingDTO("User", "Room1", LocalDateTime.parse("2024-06-20T10", dateFormatter), LocalDateTime.parse("2024-06-20T11", dateFormatter));
+        BookingDTO bookingDTO = new BookingDTO("user1", "Room1", LocalDateTime.parse("2024-06-20T10", dateFormatter), LocalDateTime.parse("2024-06-20T11", dateFormatter));
+        Booking booking = new Booking(normalUser, room1, bookingDTO.startTime(), bookingDTO.endTime());
+
 
         when(bookingRepository.findByRoomName("Room1")).thenReturn(Collections.emptyList());
-        when(roomRepository.findByName("Room1")).thenReturn(Optional.of(room1));
         when(httpSession.getAttribute("loggedIn")).thenReturn(normalUserDTO);
+        when(userMapper.toEntity(normalUserDTO)).thenReturn(normalUser);
+        when(bookingMapper.toEntity(bookingDTO)).thenReturn(booking);
 
         bookingService.createBooking(httpRequest, bookingDTO);
 
-        SoftAssertions softly = new SoftAssertions();
         verify(bookingRepository, times(1)).save(any(Booking.class));
-        softly.assertAll();
     }
 
     @Test
     @DisplayName("Should not create booking if room is not available")
-    public void testCreateBookingTimeNotAvailable() {
+    public void testCreateBookingTimeNotAvailable(SoftAssertions softly) {
         BookingDTO bookingDTO = new BookingDTO("User", "Room1", LocalDateTime.parse("2024-06-20T10", dateFormatter), LocalDateTime.parse("2024-06-20T11", dateFormatter));
-        Booking existingBooking = new Booking(new User("user1", "password"), room1, bookingDTO.startTime(), bookingDTO.endTime());
+        Booking existingBooking = new Booking(normalUser, room1, bookingDTO.startTime(), bookingDTO.endTime());
 
         when(bookingRepository.findByRoomName("Room1")).thenReturn(List.of(existingBooking));
-        when(httpSession.getAttribute("loggedIn")).thenReturn(normalUserDTO);
 
-        SoftAssertions softly = new SoftAssertions();
         softly.assertThatThrownBy(() -> bookingService.createBooking(httpRequest, bookingDTO))
                 .isInstanceOf(BookingIsNotAvailableException.class)
                 .hasMessageContaining("Booking this room and time is not available");
         verify(bookingRepository, never()).save(any(Booking.class));
-        softly.assertAll();
     }
 
 
     @Test
     @DisplayName("Should update booking by creator")
-    public void testUpdateBooking() {
+    public void testUpdateBooking(SoftAssertions softly) {
         LocalDateTime originalStart = LocalDateTime.parse("2024-06-20T10", dateFormatter);
         LocalDateTime newStart = LocalDateTime.parse("2024-06-20T12", dateFormatter);
         LocalDateTime newEnd = LocalDateTime.parse("2024-06-20T13", dateFormatter);
         UpdateBookingRequest request = new UpdateBookingRequest("Room1", originalStart, "Room2", newStart, newEnd);
 
-        Booking booking = new Booking(new User("user1", "password"), room1, originalStart, LocalDateTime.parse("2024-06-20T11", dateFormatter));
+        Booking booking = new Booking(normalUser, room1, originalStart, LocalDateTime.parse("2024-06-20T11", dateFormatter));
 
         when(httpSession.getAttribute("loggedIn")).thenReturn(normalUserDTO);
         when(bookingRepository.findByRoomAndTime("Room1", originalStart)).thenReturn(Optional.of(booking));
-        when(roomRepository.findByName("Room2")).thenReturn(Optional.of(room2));
+        when(userMapper.toEntity(normalUserDTO)).thenReturn(normalUser);
 
         bookingService.updateBooking(httpRequest, request);
 
-        SoftAssertions softly = new SoftAssertions();
         ArgumentCaptor<Booking> oldBookingCaptor = ArgumentCaptor.forClass(Booking.class);
         ArgumentCaptor<Booking> newBookingCaptor = ArgumentCaptor.forClass(Booking.class);
 
@@ -129,26 +149,24 @@ public class BookingServiceTest {
         softly.assertThat(capturedOldBooking).isEqualTo(booking);
         softly.assertThat(capturedNewBooking.getStartTime()).isEqualTo(newStart);
         softly.assertThat(capturedNewBooking.getEndTime()).isEqualTo(newEnd);
-        softly.assertAll();
     }
 
     @Test
     @DisplayName("Should update booking by admin")
-    public void testUpdateBookingAsAdmin() {
+    public void testUpdateBookingAsAdmin(SoftAssertions softly) {
         LocalDateTime originalStart = LocalDateTime.parse("2024-06-20T10", dateFormatter);
         LocalDateTime newStart = LocalDateTime.parse("2024-06-20T12", dateFormatter);
         LocalDateTime newEnd = LocalDateTime.parse("2024-06-20T13", dateFormatter);
         UpdateBookingRequest request = new UpdateBookingRequest("Room1", originalStart, "Room2", newStart, newEnd);
 
-        Booking booking = new Booking(new User("admin", "adminpass"), room1, originalStart, LocalDateTime.parse("2024-06-20T11", dateFormatter));
+        Booking booking = new Booking(normalUser, room1, originalStart, LocalDateTime.parse("2024-06-20T11", dateFormatter));
 
         when(httpSession.getAttribute("loggedIn")).thenReturn(adminUserDTO);
         when(bookingRepository.findByRoomAndTime("Room1", originalStart)).thenReturn(Optional.of(booking));
-        when(roomRepository.findByName("Room2")).thenReturn(Optional.of(room2));
+        when(userMapper.toEntity(adminUserDTO)).thenReturn(new User("admin", "adminpass", true));
 
         bookingService.updateBooking(httpRequest, request);
 
-        SoftAssertions softly = new SoftAssertions();
         ArgumentCaptor<Booking> oldBookingCaptor = ArgumentCaptor.forClass(Booking.class);
         ArgumentCaptor<Booking> newBookingCaptor = ArgumentCaptor.forClass(Booking.class);
 
@@ -160,7 +178,6 @@ public class BookingServiceTest {
         softly.assertThat(capturedOldBooking).isEqualTo(booking);
         softly.assertThat(capturedNewBooking.getStartTime()).isEqualTo(newStart);
         softly.assertThat(capturedNewBooking.getEndTime()).isEqualTo(newEnd);
-        softly.assertAll();
     }
 
 
@@ -170,16 +187,16 @@ public class BookingServiceTest {
         LocalDateTime start = LocalDateTime.parse("2024-06-20T10", dateFormatter);
         RemoveBookingRequest request = new RemoveBookingRequest("Room1", start);
 
-        Booking existingBooking = new Booking(new User("user1", "password"), room1, start, LocalDateTime.parse("2024-06-20T11", dateFormatter));
+        Booking existingBooking = new Booking(normalUser, room1, start, LocalDateTime.parse("2024-06-20T11", dateFormatter));
+        User adminUser = new User("admin", "adminpass", true);
 
         when(httpSession.getAttribute("loggedIn")).thenReturn(adminUserDTO);
         when(bookingRepository.findByRoomAndTime("Room1", start)).thenReturn(Optional.of(existingBooking));
+        when(userMapper.toEntity(adminUserDTO)).thenReturn(adminUser);
 
         bookingService.deleteBooking(httpRequest, request);
 
-        SoftAssertions softly = new SoftAssertions();
         verify(bookingRepository).delete(existingBooking);
-        softly.assertAll();
     }
 
     @Test
@@ -188,40 +205,41 @@ public class BookingServiceTest {
         LocalDateTime start = LocalDateTime.parse("2024-06-20T10", dateFormatter);
         RemoveBookingRequest request = new RemoveBookingRequest("Room1", start);
 
-        Booking existingBooking = new Booking(new User("user1", "password"), room1, start, LocalDateTime.parse("2024-06-20T11", dateFormatter));
+        Booking existingBooking = new Booking(normalUser, room1, start, LocalDateTime.parse("2024-06-20T11", dateFormatter));
 
         when(httpSession.getAttribute("loggedIn")).thenReturn(normalUserDTO);
         when(bookingRepository.findByRoomAndTime("Room1", start)).thenReturn(Optional.of(existingBooking));
+        when(userMapper.toEntity(normalUserDTO)).thenReturn(normalUser);
 
         bookingService.deleteBooking(httpRequest, request);
 
-        SoftAssertions softly = new SoftAssertions();
         verify(bookingRepository).delete(existingBooking);
-        softly.assertAll();
     }
 
     @Test
     @DisplayName("Should not delete booking by unauthorized user")
-    public void testDeleteBookingUnauthorizedUser() {
+    public void testDeleteBookingUnauthorizedUser(SoftAssertions softly) {
         LocalDateTime start = LocalDateTime.parse("2024-06-20T10", dateFormatter);
         RemoveBookingRequest request = new RemoveBookingRequest("Room1", start);
+        User unauthorizedUser = new User("user2", "password2", false);
+        UserDTO unauthorizedUserDTO = new UserDTO("user2", "password2", false);
 
-        Booking existingBooking = new Booking(new User("user1", "password"), room1, start, LocalDateTime.parse("2024-06-20T11", dateFormatter));
+
+        Booking existingBooking = new Booking(normalUser, room1, start, LocalDateTime.parse("2024-06-20T11", dateFormatter));
 
         when(httpSession.getAttribute("loggedIn")).thenReturn(new UserDTO("user2", "password2", false));
         when(bookingRepository.findByRoomAndTime("Room1", start)).thenReturn(Optional.of(existingBooking));
+        when(userMapper.toEntity(unauthorizedUserDTO)).thenReturn(unauthorizedUser);
 
-        SoftAssertions softly = new SoftAssertions();
         softly.assertThatThrownBy(() -> bookingService.deleteBooking(httpRequest, request))
                 .isInstanceOf(SecurityException.class)
                 .hasMessageContaining("Denied. Must be the creator of the booking or have admin access");
         verify(bookingRepository, never()).delete(existingBooking);
-        softly.assertAll();
     }
 
     @Test
     @DisplayName("Should filter bookings by date")
-    public void testFilterBookingsByDate() {
+    public void testFilterBookingsByDate(SoftAssertions softly) {
         LocalDate filterDate = LocalDate.parse("2024-06-20", DateTimeFormatter.ISO_DATE);
         FilterBookingsRequest request = new FilterBookingsRequest(filterDate, null, null);
         Booking booking = new Booking(new User("user1", "password"), room1, LocalDateTime.parse("2024-06-20T10", dateFormatter), LocalDateTime.parse("2024-06-20T11", dateFormatter));
@@ -230,14 +248,12 @@ public class BookingServiceTest {
 
         List<BookingDTO> filteredBookings = bookingService.filterBookings(request);
 
-        SoftAssertions softly = new SoftAssertions();
         softly.assertThat(filteredBookings).hasSize(1);
-        softly.assertAll();
     }
 
     @Test
     @DisplayName("Should filter bookings by user")
-    public void testFilterBookingsByUser() {
+    public void testFilterBookingsByUser(SoftAssertions softly) {
         FilterBookingsRequest request = new FilterBookingsRequest(null, "user1", null);
         Booking booking = new Booking(new User("user1", "password"), room1, LocalDateTime.parse("2024-06-20T10", dateFormatter), LocalDateTime.parse("2024-06-20T11", dateFormatter));
 
@@ -246,14 +262,12 @@ public class BookingServiceTest {
 
         List<BookingDTO> filteredBookings = bookingService.filterBookings(request);
 
-        SoftAssertions softly = new SoftAssertions();
         softly.assertThat(filteredBookings).hasSize(1);
-        softly.assertAll();
     }
 
     @Test
     @DisplayName("Should filter bookings by room")
-    public void testFilterBookingsByRoom() {
+    public void testFilterBookingsByRoom(SoftAssertions softly) {
         FilterBookingsRequest request = new FilterBookingsRequest(null, null, "Room1");
         Booking booking = new Booking(new User("user1", "password"), room1, LocalDateTime.parse("2024-06-20T10", dateFormatter), LocalDateTime.parse("2024-06-20T11", dateFormatter));
 
@@ -262,8 +276,6 @@ public class BookingServiceTest {
 
         List<BookingDTO> filteredBookings = bookingService.filterBookings(request);
 
-        SoftAssertions softly = new SoftAssertions();
         softly.assertThat(filteredBookings).hasSize(1);
-        softly.assertAll();
     }
 }

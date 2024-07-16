@@ -47,7 +47,8 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
-    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH");
+    private final BookingMapper bookingMapper;
+    private final UserMapper userMapper;
 
     /**
      * Creates a new booking.
@@ -62,14 +63,13 @@ public class BookingServiceImpl implements BookingService {
 
         if (!isRoomAvailable(bookingDTO.roomName(), start, end)) {
             throw new BookingIsNotAvailableException("Booking this room and time is not available");
-        } else {
+        }
             UserDTO userDTO = getUserDTOFromSession(httpRequest);
-            Booking booking = BookingMapper.INSTANCE.toEntity(bookingDTO);
-            User user = UserMapper.INSTANCE.toEntity(userDTO);
+            Booking booking = bookingMapper.toEntity(bookingDTO);
+            User user = userMapper.toEntity(userDTO);
             booking.setUser(user);
             booking.setRoom(findRoomByName(bookingDTO.roomName()));
             bookingRepository.save(booking);
-        }
     }
 
     /**
@@ -119,7 +119,7 @@ public class BookingServiceImpl implements BookingService {
 
         Booking booking = optionalBooking.get();
         UserDTO userDTO = getUserDTOFromSession(httpRequest);
-        User user = UserMapper.INSTANCE.toEntity(userDTO);
+        User user = userMapper.toEntity(userDTO);
 
         if (!booking.getUser().equals(user) && !user.isAdmin()) {
             throw new SecurityException("Denied. Must be the creator of the booking or have admin access");
@@ -154,7 +154,7 @@ public class BookingServiceImpl implements BookingService {
 
         Booking booking = optionalBooking.get();
         UserDTO userDTO = getUserDTOFromSession(httpRequest);
-        User user = UserMapper.INSTANCE.toEntity(userDTO);
+        User user = userMapper.toEntity(userDTO);
         if (!user.isAdmin() && !booking.getUser().equals(user)) {
             throw new SecurityException("Denied. Must be the creator of the booking or have admin access");
         }
@@ -191,7 +191,6 @@ public class BookingServiceImpl implements BookingService {
             date = null;
         }
 
-
         List<Booking> filterResult = bookingRepository.findAll();
         if (user.isPresent()) {
             filterResult = filterResult.stream()
@@ -215,7 +214,7 @@ public class BookingServiceImpl implements BookingService {
                     .toList();
         }
 
-        return filterResult.stream().map(BookingMapper.INSTANCE::toDTO).toList();
+        return filterResult.stream().map(bookingMapper::toDTO).toList();
     }
 
     /**

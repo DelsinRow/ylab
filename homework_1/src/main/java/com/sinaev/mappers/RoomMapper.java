@@ -12,9 +12,8 @@ import org.mapstruct.factory.Mappers;
  * between {@link Room} and {@link RoomDTO} objects.
  * </p>
  */
-@Mapper
+@Mapper(componentModel = "spring")
 public interface RoomMapper {
-    RoomMapper INSTANCE = Mappers.getMapper(RoomMapper.class);
 
     /**
      * Converts a Room entity to a RoomDTO.

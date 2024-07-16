@@ -7,6 +7,7 @@ import com.sinaev.models.dto.UserDTO;
 import com.sinaev.models.entities.User;
 import com.sinaev.repositories.UserRepository;
 import com.sinaev.services.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
@@ -19,18 +20,10 @@ import java.util.Optional;
  */
 @Service
 @Loggable
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
-    private final UserMapper userMapper = UserMapper.INSTANCE;
-
-    /**
-     * Constructs a UserService with the specified repository.
-     *
-     * @param userRepository the repository for managing users
-     */
-    public UserServiceImpl(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private final UserMapper userMapper;
 
     /**
      * Logs in the specified user if they are registered.
@@ -42,11 +35,12 @@ public class UserServiceImpl implements UserService {
     public void login(HttpServletRequest httpReq, UserDTO userDTO) {
         if (!isRegistered(userDTO)) {
             throw new NoSuchElementException("User: '" + userDTO.username() + "' not found");
-        } else {
-            User user = userMapper.toEntity(userDTO);
-            if (isAdmin(user)) user.setAdmin(true);
-
         }
+        User user = userMapper.toEntity(userDTO);
+        if (isAdmin(user)) {
+            user.setAdmin(true);
+        }
+        setUserDTOInSession(httpReq, userDTO);
     }
 
     /**
@@ -60,9 +54,8 @@ public class UserServiceImpl implements UserService {
         user.setAdmin(false);
         if (usernameIsTaken(user)) {
             throw new UsernameAlreadyTakenException("User with login " + userDTO.username() + " already exist");
-        } else {
-            userRepository.save(user);
         }
+        userRepository.save(user);
     }
 
     /**
@@ -72,7 +65,6 @@ public class UserServiceImpl implements UserService {
      * @return true if the user with the specified login and password is registered, false otherwise
      */
     private boolean isRegistered(UserDTO userDTO) {
-
         return userRepository.findByUsername(userDTO.username())
                 .map(user -> user.getPassword().equals(userDTO.password()))
                 .orElse(false);
@@ -121,12 +113,9 @@ public class UserServiceImpl implements UserService {
         Optional<User> userOpt = userRepository.findByUsername(userDTO.username());
         if (userOpt.isEmpty()) {
             throw new NoSuchElementException("User not found");
-        } else {
-            UserDTO userWithAdminStatus = UserMapper.INSTANCE.toDTO(userOpt.get());
-            HttpSession session = req.getSession();
-            session.setAttribute("loggedIn", userWithAdminStatus);
         }
+        UserDTO userWithAdminStatus = userMapper.toDTO(userOpt.get());
+        HttpSession session = req.getSession();
+        session.setAttribute("loggedIn", userWithAdminStatus);
     }
-
-
 }

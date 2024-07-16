@@ -117,13 +117,7 @@ public class BookingRepository {
             preparedStatement.setLong(2, getRoomId(booking.getRoom().getName()));
             preparedStatement.setTimestamp(3, Timestamp.valueOf(booking.getStartTime()));
             preparedStatement.setTimestamp(4, Timestamp.valueOf(booking.getEndTime()));
-            int affectedRows = preparedStatement.executeUpdate();
-
-            if (affectedRows > 0) {
-                System.out.println("Booking saved successfully.");
-            } else {
-                System.out.println("Failed to save the booking.");
-            }
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             System.out.println("Got SQL Exception " + e.getMessage());
         }
@@ -150,12 +144,7 @@ public class BookingRepository {
             preparedStatement.setLong(5, getRoomId(oldBooking.getRoom().getName()));
             preparedStatement.setTimestamp(6, Timestamp.valueOf(oldBooking.getStartTime()));
 
-            int affectedRows = preparedStatement.executeUpdate();
-            if (affectedRows > 0) {
-                System.out.println("Booking updated successfully.");
-            } else {
-                System.out.println("No booking found with the specified name.");
-            }
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             System.out.println("Got SQL Exception " + e.getMessage());
         }
@@ -178,13 +167,7 @@ public class BookingRepository {
             preparedStatement.setLong(2, getRoomId(booking.getRoom().getName()));
             preparedStatement.setTimestamp(3, Timestamp.valueOf(booking.getStartTime()));
             preparedStatement.setTimestamp(4, Timestamp.valueOf(booking.getEndTime()));
-            int affectedRows = preparedStatement.executeUpdate();
-
-            if (affectedRows > 0) {
-                System.out.println("Booking deleted successfully.");
-            } else {
-                System.out.println("Failed to delete the booking.");
-            }
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             System.out.println("Got SQL Exception " + e.getMessage());
         }

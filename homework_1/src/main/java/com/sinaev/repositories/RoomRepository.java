@@ -99,12 +99,7 @@ public class RoomRepository {
             preparedStatement.setString(2, newRoom.getType().name());
             preparedStatement.setString(3, oldRoom.getName());
 
-            int affectedRows = preparedStatement.executeUpdate();
-            if (affectedRows > 0) {
-                System.out.println("Room " + oldRoom.getName() + " updated successfully.");
-            } else {
-                System.out.println("No room found with the specified name.");
-            }
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             System.out.println("Got SQL Exception " + e.getMessage());
         }
@@ -147,13 +142,7 @@ public class RoomRepository {
             changeSearchPath(connection);
 
             preparedStatement.setString(1, roomName);
-            int affectedRows = preparedStatement.executeUpdate();
-
-            if (affectedRows > 0) {
-                System.out.println("Room " + roomName + " deleted successfully.");
-            } else {
-                System.out.println("Room not found.");
-            }
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             System.out.println("Got SQL Exception " + e.getMessage());
         }

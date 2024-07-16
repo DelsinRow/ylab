@@ -13,6 +13,7 @@ import com.sinaev.services.RoomService;
 
 import javax.servlet.http.HttpServletRequest;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,12 +25,10 @@ import java.util.Optional;
  */
 @Service
 @Loggable
+@RequiredArgsConstructor
 public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
-
-    public RoomServiceImpl(RoomRepository roomRepository) {
-        this.roomRepository = roomRepository;
-    }
+    private final RoomMapper roomMapper;
 
     /**
      * Creates a new room.
@@ -44,13 +43,9 @@ public class RoomServiceImpl implements RoomService {
         }
         if (roomRepository.exists(roomDTO.name())) {
             throw new ObjectAlreadyExistsException("Room with name '" + roomDTO.name() + "' already exists");
-
-        } else {
-            Room room = RoomMapper.INSTANCE.toEntity(roomDTO);
-            roomRepository.save(room);
         }
-
-
+        Room room = roomMapper.toEntity(roomDTO);
+        roomRepository.save(room);
     }
 
     /**
@@ -59,7 +54,7 @@ public class RoomServiceImpl implements RoomService {
      * @return the list of rooms
      */
     public List<RoomDTO> getRooms() {
-        List<RoomDTO> rooms = roomRepository.findAll().stream().map(RoomMapper.INSTANCE::toDTO).toList();
+        List<RoomDTO> rooms = roomRepository.findAll().stream().map(roomMapper::toDTO).toList();
         return rooms;
     }
 
@@ -79,13 +74,12 @@ public class RoomServiceImpl implements RoomService {
         Optional<Room> optionalRoom = roomRepository.findByName(originalRoomName);
         if (optionalRoom.isEmpty()) {
             throw new NoSuchElementException("Room not found");
-        } else {
-            String newRoomName = updateRoomRequest.newRoomName();
-            RoomType roomType = RoomType.valueOf(updateRoomRequest.newRoomType());
-            Room oldRoom = optionalRoom.get();
-            Room newRoom = new Room(newRoomName, roomType);
-            roomRepository.update(oldRoom, newRoom);
         }
+        String newRoomName = updateRoomRequest.newRoomName();
+        RoomType roomType = RoomType.valueOf(updateRoomRequest.newRoomType());
+        Room oldRoom = optionalRoom.get();
+        Room newRoom = new Room(newRoomName, roomType);
+        roomRepository.update(oldRoom, newRoom);
     }
 
     /**
@@ -99,12 +93,10 @@ public class RoomServiceImpl implements RoomService {
         if (!userIsAdmin(userDTO)) {
             throw new SecurityException("You do not have admin user access");
         }
-
         Optional<Room> optionalRoom = roomRepository.findByName(roomName);
         if (optionalRoom.isEmpty()) {
             throw new NoSuchElementException("Room not found");
         }
-
         Room room = optionalRoom.get();
         roomRepository.delete(room);
     }

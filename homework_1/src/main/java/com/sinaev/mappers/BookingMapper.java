@@ -13,9 +13,8 @@ import org.mapstruct.factory.Mappers;
  * between {@link Booking} and {@link BookingDTO} objects.
  * </p>
  */
-@Mapper
+@Mapper(componentModel = "spring")
 public interface BookingMapper {
-    BookingMapper INSTANCE = Mappers.getMapper(BookingMapper.class);
 
     /**
      * Converts a BookingDTO to a Booking entity.

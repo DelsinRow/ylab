@@ -9,9 +9,11 @@ import com.sinaev.models.requests.booking.RemoveBookingRequest;
 import com.sinaev.models.requests.booking.UpdateBookingRequest;
 import com.sinaev.services.BookingService;
 import org.assertj.core.api.SoftAssertions;
+import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -48,6 +50,7 @@ public class BookingControllerTest {
 
     @Test
     @DisplayName("Test successful booking creation")
+
     public void testCreateBookingSuccess() {
         BookingDTO bookingDTO = new BookingDTO("username", "roomName", LocalDateTime.now(), LocalDateTime.now().plusHours(1));
         doNothing().when(bookingService).createBooking(httpRequest, bookingDTO);

@@ -36,14 +36,12 @@ public class UserControllerTest {
     public void testLoginSuccess() {
         UserDTO userDTO = new UserDTO("username", "password", false);
         doNothing().when(userService).login(httpRequest, userDTO);
-        doNothing().when(userService).setUserDTOInSession(httpRequest, userDTO);
 
         ResponseEntity<?> response = userController.login(httpRequest, userDTO);
 
         assertEquals(200, response.getStatusCodeValue());
         assertEquals("User logged successfully", response.getBody());
         verify(userService, times(1)).login(httpRequest, userDTO);
-        verify(userService, times(1)).setUserDTOInSession(httpRequest, userDTO);
     }
 
     @Test
@@ -57,7 +55,6 @@ public class UserControllerTest {
         assertEquals(400, response.getStatusCodeValue());
         assertEquals("User not found", response.getBody());
         verify(userService, times(1)).login(httpRequest, userDTO);
-        verify(userService, times(0)).setUserDTOInSession(httpRequest, userDTO);
     }
 
     @Test
@@ -65,7 +62,6 @@ public class UserControllerTest {
     public void testRegisterSuccess() {
         UserDTO userDTO = new UserDTO("username", "password", false);
         doNothing().when(userService).register(userDTO);
-        doNothing().when(userService).setUserDTOInSession(httpRequest, userDTO);
 
         ResponseEntity<?> response = userController.register(httpRequest, userDTO);
 
@@ -85,6 +81,5 @@ public class UserControllerTest {
         assertEquals(400, response.getStatusCodeValue());
         assertEquals("Username is already taken", response.getBody());
         verify(userService, times(1)).register(userDTO);
-        verify(userService, times(0)).setUserDTOInSession(httpRequest, userDTO);
     }
 }
