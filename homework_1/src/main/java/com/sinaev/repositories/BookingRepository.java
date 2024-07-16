@@ -23,13 +23,21 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repository for managing bookings.
+ * Repository for managing {@link Booking} entities.
+ * <p>
+ * This repository provides methods for performing CRUD operations on bookings in the database.
+ * </p>
  */
 @Repository
 @RequiredArgsConstructor
 public class BookingRepository {
     private final DataSource dataSource;
 
+    /**
+     * Retrieves all bookings from the database.
+     *
+     * @return a list of all bookings
+     */
     public List<Booking> findAll() {
         List<Booking> bookings = new ArrayList<>();
         String findAllSQL = "SELECT * FROM bookings";
@@ -59,11 +67,11 @@ public class BookingRepository {
     /**
      * Finds a booking by room and start time.
      *
+     * @param roomName  the name of the room
      * @param startTime the start time of the booking
-     * @param roomName  the name of room of the booking
      * @return an Optional containing the found booking, or an empty Optional if no booking is found
      */
-    public Optional<Booking> findByRoomAndTime(String roomName,LocalDateTime startTime) {
+    public Optional<Booking> findByRoomAndTime(String roomName, LocalDateTime startTime) {
         String findByRoomAndTimeSQL = "SELECT * FROM bookings WHERE start_time = ? AND room_id = ?";
         Booking foundBooking = null;
 
@@ -288,6 +296,12 @@ public class BookingRepository {
         return bookings;
     }
 
+    /**
+     * Finds a room by its name.
+     *
+     * @param roomName the name of the room
+     * @return the room with the specified name
+     */
     public Room findRoomByName(String roomName) {
         try {
             return findRoomById(getRoomId(roomName));

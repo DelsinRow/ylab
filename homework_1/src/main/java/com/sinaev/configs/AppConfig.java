@@ -15,7 +15,8 @@ import org.springframework.core.env.Environment;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 /**
- * Configuration class that loads properties from the application.properties file.
+ *  This class configures the Spring application. It loads properties from a YAML file,
+ *  scans for Spring components, and sets up necessary beans like database and Liquibase properties.
  */
 @Configuration
 @EnableAspectJAutoProxy
@@ -26,6 +27,11 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 public class AppConfig {
     private final Environment env;
 
+    /**
+     * Configures Liquibase properties.
+     *
+     * @return configured LiquibaseProperties object
+     */
     @Bean
     public LiquibaseProperties liquibaseConfig() {
         LiquibaseProperties config = new LiquibaseProperties();
@@ -35,6 +41,11 @@ public class AppConfig {
         return config;
     }
 
+    /**
+     * Configures data source properties.
+     *
+     * @return configured DatasourceProperties object
+     */
     @Bean
     public DatasourceProperties dataSourceProperties() {
         DatasourceProperties props = new DatasourceProperties();
@@ -44,6 +55,13 @@ public class AppConfig {
         return props;
     }
 
+    /**
+     * Initializes Liquibase with the configured properties.
+     *
+     * @param liquibaseProperties Liquibase properties
+     * @param datasourceProperties Data source properties
+     * @return configured LiquibaseInitializer object
+     */
     @Bean
     public LiquibaseInitializer liquibaseInitializer(LiquibaseProperties liquibaseProperties, DatasourceProperties datasourceProperties) {
         return new LiquibaseInitializer(liquibaseProperties, datasourceProperties);

@@ -7,10 +7,10 @@ import com.sinaev.models.dto.UserDTO;
 import com.sinaev.models.entities.User;
 import com.sinaev.repositories.UserRepository;
 import com.sinaev.services.UserService;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -33,10 +33,11 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * Logs in the specified user if they are registered and sets their admin status.
+     * Logs in the specified user if they are registered.
      *
+     * @param httpReq the HTTP request containing user session information
      * @param userDTO the DTO of user attempting to log in
-     * @return the logged-in User object if successful; otherwise, returns a User object with login status set to false
+     * @throws NoSuchElementException if the user is not found
      */
     public void login(HttpServletRequest httpReq, UserDTO userDTO) {
         if (!isRegistered(userDTO)) {
@@ -52,6 +53,7 @@ public class UserServiceImpl implements UserService {
      * Registers the specified user if their username is not already taken.
      *
      * @param userDTO the DTO of user to register
+     * @throws UsernameAlreadyTakenException if the username is already taken
      */
     public void register(UserDTO userDTO) {
         User user = userMapper.toEntity(userDTO);
@@ -108,8 +110,15 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByUsername(username);
     }
 
+    /**
+     * Sets the user DTO in the session.
+     *
+     * @param req     the HTTP request containing the session
+     * @param userDTO the user data transfer object to be set in the session
+     * @throws NoSuchElementException if the user is not found
+     */
     public void setUserDTOInSession(HttpServletRequest req, UserDTO userDTO) {
-        Optional<User> userOpt= userRepository.findByUsername(userDTO.username());
+        Optional<User> userOpt = userRepository.findByUsername(userDTO.username());
         if (userOpt.isEmpty()) {
             throw new NoSuchElementException("User not found");
         } else {
@@ -118,7 +127,6 @@ public class UserServiceImpl implements UserService {
             session.setAttribute("loggedIn", userWithAdminStatus);
         }
     }
-
 
 
 }

@@ -27,6 +27,7 @@ public class AuditAspect {
 
     @After("controllerMethods()")
     public void logAfter(JoinPoint joinPoint) {
+        System.out.println("!!! I AM HERE !!!!!");
         HttpServletRequest req = null;
         for (Object arg : joinPoint.getArgs()) {
             if (arg instanceof HttpServletRequest) {

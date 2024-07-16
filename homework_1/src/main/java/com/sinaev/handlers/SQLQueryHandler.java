@@ -13,6 +13,11 @@ import java.util.Properties;
  */
 public class SQLQueryHandler {
 
+    /**
+     * Sets the search path to 'entity_schema' for the given database connection.
+     *
+     * @param connection the database connection
+     */
     public void addSearchPathPrivate(Connection connection) {
         String setSQL = "SET search_path TO entity_schema";
         try {

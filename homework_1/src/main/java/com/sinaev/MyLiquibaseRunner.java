@@ -8,8 +8,6 @@ import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import lombok.Builder;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -18,6 +16,10 @@ import java.sql.Statement;
 
 /**
  * Handles the execution of Liquibase migrations.
+ * <p>
+ * This class is responsible for setting up the database schemas and running Liquibase
+ * to apply database changes defined in the changelog file.
+ * </p>
  */
 @Builder
 public class MyLiquibaseRunner {
@@ -38,6 +40,12 @@ public class MyLiquibaseRunner {
         }
     }
 
+    /**
+     * Runs Liquibase to apply the database changes.
+     * <p>
+     * This method sets up the schemas and runs the Liquibase migrations.
+     * </p>
+     */
     public void runLiquibase() {
         createSchema(entitySchemaName);
         createSchema(defaultSchemaName);
@@ -55,6 +63,11 @@ public class MyLiquibaseRunner {
         }
     }
 
+    /**
+     * Creates a schema if it does not already exist.
+     *
+     * @param schemaName the name of the schema to create
+     */
     private void createSchema(String schemaName) {
         String createSchemaSQL = "CREATE SCHEMA IF NOT EXISTS " + schemaName;
 

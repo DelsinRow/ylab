@@ -17,7 +17,9 @@ import com.sinaev.repositories.BookingRepository;
 import com.sinaev.repositories.RoomRepository;
 import com.sinaev.repositories.UserRepository;
 import com.sinaev.services.BookingService;
+
 import javax.servlet.http.HttpServletRequest;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +34,11 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 /**
- * Booking service class that manages bookings for resources.
+ * Implementation of the {@link BookingService} interface.
+ * <p>
+ * This service manages bookings, including creating, updating, deleting, and filtering bookings.
+ * It also checks room availability and retrieves available booking hours.
+ * </p>
  */
 @Service
 @Loggable
@@ -43,6 +49,12 @@ public class BookingServiceImpl implements BookingService {
     private final RoomRepository roomRepository;
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH");
 
+    /**
+     * Creates a new booking.
+     *
+     * @param httpRequest the HTTP request containing user session information
+     * @param bookingDTO  the booking data transfer object containing booking details
+     */
     @Override
     public void createBooking(HttpServletRequest httpRequest, BookingDTO bookingDTO) {
         LocalDateTime start = bookingDTO.startTime();
@@ -60,7 +72,12 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-
+    /**
+     * Retrieves available hours for booking a room on a specific date.
+     *
+     * @param request the request containing the date and room name
+     * @return a list of available hours
+     */
     @Override
     public List<LocalTime> getAvailableHours(GetAvailableHoursRequest request) {
         List<LocalTime> availableHours = new ArrayList<>();
@@ -83,6 +100,12 @@ public class BookingServiceImpl implements BookingService {
         return availableHours;
     }
 
+    /**
+     * Updates an existing booking.
+     *
+     * @param httpRequest the HTTP request containing user session information
+     * @param request     the request containing the original and new booking details
+     */
     @Override
     public void updateBooking(HttpServletRequest httpRequest, UpdateBookingRequest request) {
         LocalDateTime originalStart = request.originalStartTime();
@@ -103,7 +126,7 @@ public class BookingServiceImpl implements BookingService {
         }
 
         String newRoomName = request.newRoomName();
-        LocalDateTime newStart = request.newStarTime();
+        LocalDateTime newStart = request.newStartTime();
         LocalDateTime newEnd = request.newEndTime();
         if (!isRoomAvailable(newRoomName, newStart, newEnd)) {
             throw new BookingIsNotAvailableException("The new time or room is not available. Try another time or resource.");
@@ -113,6 +136,12 @@ public class BookingServiceImpl implements BookingService {
         bookingRepository.update(booking, newBooking);
     }
 
+    /**
+     * Deletes an existing booking.
+     *
+     * @param httpRequest the HTTP request containing user session information
+     * @param request     the request containing the booking details to be deleted
+     */
     @Override
     public void deleteBooking(HttpServletRequest httpRequest, RemoveBookingRequest request) {
         LocalDateTime startTime = request.startTime();
@@ -133,6 +162,12 @@ public class BookingServiceImpl implements BookingService {
         bookingRepository.delete(booking);
     }
 
+    /**
+     * Filters bookings based on the specified criteria.
+     *
+     * @param request the request containing the filtering criteria
+     * @return a list of filtered bookings
+     */
     @Override
     public List<BookingDTO> filterBookings(FilterBookingsRequest request) {
         Optional<User> user;
@@ -196,10 +231,23 @@ public class BookingServiceImpl implements BookingService {
                 .allMatch(booking -> booking.getEndTime().isBefore(startTime) || booking.getStartTime().isAfter(endTime));
     }
 
+    /**
+     * Finds a room by its name.
+     *
+     * @param roomName the name of the room to find
+     * @return the room with the specified name
+     */
     Room findRoomByName(String roomName) {
         return bookingRepository.findRoomByName(roomName);
     }
 
+    /**
+     * Retrieves the user DTO from the session.
+     *
+     * @param req the HTTP request containing the session
+     * @return the user DTO
+     * @throws NoSuchElementException if the user is not found in the session
+     */
     private UserDTO getUserDTOFromSession(HttpServletRequest req) {
         UserDTO userDTO = (UserDTO) req.getSession().getAttribute("loggedIn");
         if (userDTO == null) {

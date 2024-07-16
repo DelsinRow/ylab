@@ -10,7 +10,9 @@ import com.sinaev.models.enums.RoomType;
 import com.sinaev.models.requests.room.UpdateRoomRequest;
 import com.sinaev.repositories.RoomRepository;
 import com.sinaev.services.RoomService;
+
 import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -29,7 +31,12 @@ public class RoomServiceImpl implements RoomService {
         this.roomRepository = roomRepository;
     }
 
-
+    /**
+     * Creates a new room.
+     *
+     * @param req     the HTTP request containing user session information
+     * @param roomDTO the room data transfer object containing room details
+     */
     public void createRoom(HttpServletRequest req, RoomDTO roomDTO) {
         UserDTO userDTO = getUserDTOFromSession(req);
         if (!userIsAdmin(userDTO)) {
@@ -56,7 +63,12 @@ public class RoomServiceImpl implements RoomService {
         return rooms;
     }
 
-
+    /**
+     * Updates an existing room.
+     *
+     * @param req               the HTTP request containing user session information
+     * @param updateRoomRequest the request containing the original and new room details
+     */
     public void updateRoom(HttpServletRequest req, UpdateRoomRequest updateRoomRequest) {
         UserDTO userDTO = getUserDTOFromSession(req);
         if (!userIsAdmin(userDTO)) {
@@ -76,7 +88,12 @@ public class RoomServiceImpl implements RoomService {
         }
     }
 
-
+    /**
+     * Deletes an existing room.
+     *
+     * @param req      the HTTP request containing user session information
+     * @param roomName the name of the room to be deleted
+     */
     public void deleteRoom(HttpServletRequest req, String roomName) {
         UserDTO userDTO = getUserDTOFromSession(req);
         if (!userIsAdmin(userDTO)) {
@@ -92,10 +109,23 @@ public class RoomServiceImpl implements RoomService {
         roomRepository.delete(room);
     }
 
+    /**
+     * Checks if the user has admin privileges.
+     *
+     * @param userDTO the user data transfer object
+     * @return true if the user is an admin, false otherwise
+     */
     private boolean userIsAdmin(UserDTO userDTO) {
         return userDTO.admin();
     }
 
+    /**
+     * Retrieves the user DTO from the session.
+     *
+     * @param httpRequest the HTTP request containing the session
+     * @return the user DTO
+     * @throws NoSuchElementException if the user is not found in the session
+     */
     private UserDTO getUserDTOFromSession(HttpServletRequest httpRequest) {
         UserDTO userDTO = (UserDTO) httpRequest.getSession().getAttribute("loggedIn");
         if (userDTO == null) {
