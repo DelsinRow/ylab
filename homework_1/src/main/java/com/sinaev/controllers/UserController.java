@@ -60,7 +60,6 @@ public class UserController {
                                @RequestBody UserDTO userDTO) {
         try {
             userService.register(userDTO);
-            userService.setUserDTOInSession(httpRequest, userDTO);
             return ResponseEntity.ok().body("User registered successfully");
         } catch (UsernameAlreadyTakenException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

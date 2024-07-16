@@ -72,7 +72,6 @@ public class UserControllerTest {
         assertEquals(200, response.getStatusCodeValue());
         assertEquals("User registered successfully", response.getBody());
         verify(userService, times(1)).register(userDTO);
-        verify(userService, times(1)).setUserDTOInSession(httpRequest, userDTO);
     }
 
     @Test
