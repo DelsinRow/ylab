@@ -1,10 +1,12 @@
 package com.sinaev.handlers;
 
 import com.sinaev.configs.AppConfig;
+import org.springframework.stereotype.Component;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
 
 /**
  * Handler for executing SQL queries.
@@ -12,14 +14,12 @@ import java.sql.Statement;
 public class SQLQueryHandler {
 
     /**
-     * Sets the search path for the database connection to the schema specified in the application configuration.
+     * Sets the search path to 'entity_schema' for the given database connection.
      *
      * @param connection the database connection
-     * @throws RuntimeException if an SQL exception occurs
      */
     public void addSearchPathPrivate(Connection connection) {
-        String schemaName = new AppConfig().getSchema();
-        String setSQL = "SET search_path TO " + schemaName;
+        String setSQL = "SET search_path TO entity_schema";
         try {
             Statement statement = connection.createStatement();
             statement.execute(setSQL);

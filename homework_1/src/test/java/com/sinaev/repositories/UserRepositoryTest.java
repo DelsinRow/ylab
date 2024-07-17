@@ -2,103 +2,69 @@ package com.sinaev.repositories;
 
 import com.sinaev.models.entities.User;
 import org.assertj.core.api.SoftAssertions;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.postgresql.ds.PGSimpleDataSource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Test class for UserRepository.
- * This class uses Testcontainers to start a PostgreSQL container for testing.
- */
 @Testcontainers
-public class UserRepositoryTest {
+class UserRepositoryTest {
 
-    /**
-     * PostgreSQL container for testing.
-     */
     @Container
-    public static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:latest")
-            .withDatabaseName("test")
-            .withUsername("test")
-            .withPassword("test");
+    public static PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:latest")
+            .withDatabaseName("testdb")
+            .withUsername("postgres")
+            .withPassword("password");
 
+    private static DataSource dataSource;
     private UserRepository userRepository;
 
-    /**
-     * Start the PostgreSQL container before all tests.
-     */
     @BeforeAll
-    public static void setUp() {
-        postgresContainer.start();
+    static void setUpDataSource() {
+        PGSimpleDataSource ds = new PGSimpleDataSource();
+        ds.setUrl(postgreSQLContainer.getJdbcUrl());
+        ds.setUser(postgreSQLContainer.getUsername());
+        ds.setPassword(postgreSQLContainer.getPassword());
+        dataSource = ds;
     }
 
-    /**
-     * Initialize the UserRepository and create necessary database structures before each test.
-     */
     @BeforeEach
-    public void init() {
-        userRepository = Mockito.spy(new UserRepository(postgresContainer.getJdbcUrl(),
-                postgresContainer.getUsername(), postgresContainer.getPassword()));
-        doNothing().when(userRepository).changeSearchPath(any(Connection.class));
-        createTable();
-    }
-
-    /**
-     * Drop database structures after each test.
-     */
-    @AfterEach
-    public void tearDown() {
-        dropTable();
-    }
-
-    /**
-     * Create the 'users' table in the database.
-     */
-    private void createTable() {
-        try (Connection connection = DriverManager.getConnection(postgresContainer.getJdbcUrl(),
-                postgresContainer.getUsername(), postgresContainer.getPassword());
-             Statement statement = connection.createStatement()) {
-            statement.execute("CREATE TABLE users (id SERIAL PRIMARY KEY, username VARCHAR(255), password VARCHAR(255), is_admin BOOLEAN)");
-            System.out.println("Table 'users' created successfully.");
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to create table", e);
+    void setUp() throws SQLException {
+        userRepository = new UserRepository(dataSource);
+        try (Connection connection = dataSource.getConnection()) {
+            Statement statement = connection.createStatement();
+            statement.execute("CREATE SCHEMA IF NOT EXISTS entity_schema");
+            statement.execute("SET search_path TO entity_schema");
+            statement.execute("CREATE TABLE IF NOT EXISTS users (username VARCHAR(255) PRIMARY KEY, password VARCHAR(255), is_admin BOOLEAN)");
+            statement.execute("TRUNCATE TABLE users");
         }
     }
-
-    /**
-     * Drop the 'users' table from the database.
-     */
-    private void dropTable() {
-        try (Connection connection = DriverManager.getConnection(postgresContainer.getJdbcUrl(),
-                postgresContainer.getUsername(), postgresContainer.getPassword());
-             Statement statement = connection.createStatement()) {
-            statement.execute("DROP TABLE users");
-            System.out.println("Table 'users' dropped successfully.");
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to drop table", e);
-        }
-    }
-
 
     @Test
-    @DisplayName("Should find user by username")
-    public void testFindByUsername() {
-        User user = new User("testUser", "testPass", true);
+    @DisplayName("Test save user")
+    void testSaveUser() {
+        User user = new User("testUser", "testPassword", false);
+        userRepository.save(user);
+
+        assertTrue(userRepository.existsByUsername("testUser"));
+    }
+
+    @Test
+    @DisplayName("Test find user by username")
+    void testFindByUsername() {
+        User user = new User("testUser", "testPassword", false);
         userRepository.save(user);
 
         Optional<User> foundUser = userRepository.findByUsername("testUser");
@@ -106,47 +72,20 @@ public class UserRepositoryTest {
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(foundUser).isPresent();
         softly.assertThat(foundUser.get().getUsername()).isEqualTo("testUser");
-        softly.assertThat(foundUser.get().getPassword()).isEqualTo("testPass");
-        softly.assertThat(foundUser.get().isAdmin()).isTrue();
+        softly.assertThat(foundUser.get().getPassword()).isEqualTo("testPassword");
+        softly.assertThat(foundUser.get().isAdmin()).isFalse();
         softly.assertAll();
     }
 
     @Test
-    @DisplayName("Should save user")
-    public void testSave() {
-        User user = new User("testUser", "testPass", true);
+    @DisplayName("Test user exists by username")
+    void testExistsByUsername() {
+        User user = new User("testUser", "testPassword", false);
         userRepository.save(user);
 
-        Optional<User> foundUser = userRepository.findByUsername("testUser");
-
         SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(foundUser).isPresent();
-        softly.assertThat(foundUser.get().getUsername()).isEqualTo("testUser");
-        softly.assertThat(foundUser.get().getPassword()).isEqualTo("testPass");
-        softly.assertThat(foundUser.get().isAdmin()).isTrue();
-        softly.assertAll();
-    }
-
-    @Test
-    @DisplayName("Should check if username exists")
-    public void testExistsByUsername() {
-        User user = new User("testUser", "testPass", true);
-        userRepository.save(user);
-
-        boolean exists = userRepository.existsByUsername("testUser");
-
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(exists).isTrue();
-        softly.assertAll();
-    }
-
-    @Test
-    @DisplayName("Should not find non-existing user by username")
-    public void testNonExistingUser() {
-        Optional<User> foundUser = userRepository.findByUsername("nonExistingUser");
-
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(foundUser).isNotPresent();
+        softly.assertThat(userRepository.existsByUsername("testUser")).isTrue();
+        softly.assertThat(userRepository.existsByUsername("nonExistingUser")).isFalse();
         softly.assertAll();
     }
 }

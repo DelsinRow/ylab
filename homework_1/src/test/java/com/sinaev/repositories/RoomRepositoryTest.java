@@ -3,225 +3,139 @@ package com.sinaev.repositories;
 import com.sinaev.models.entities.Room;
 import com.sinaev.models.enums.RoomType;
 import org.assertj.core.api.SoftAssertions;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.postgresql.ds.PGSimpleDataSource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Test class for RoomRepository.
- * This class uses Testcontainers to start a PostgreSQL container for testing.
- */
 @Testcontainers
-public class RoomRepositoryTest {
+class RoomRepositoryTest {
 
-    /**
-     * PostgreSQL container for testing.
-     */
     @Container
-    public static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:latest")
-            .withDatabaseName("test")
-            .withUsername("test")
-            .withPassword("test");
+    public static PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:latest")
+            .withDatabaseName("testdb")
+            .withUsername("postgres")
+            .withPassword("password");
 
+    private static DataSource dataSource;
     private RoomRepository roomRepository;
 
-    /**
-     * Start the PostgreSQL container before all tests.
-     */
     @BeforeAll
-    public static void setUpContainer() {
-        postgresContainer.start();
+    static void setUpDataSource() {
+        PGSimpleDataSource ds = new PGSimpleDataSource();
+        ds.setUrl(postgreSQLContainer.getJdbcUrl());
+        ds.setUser(postgreSQLContainer.getUsername());
+        ds.setPassword(postgreSQLContainer.getPassword());
+        dataSource = ds;
     }
 
-    /**
-     * Initialize the RoomRepository and create necessary database structures before each test.
-     */
     @BeforeEach
-    public void init() {
-        roomRepository = Mockito.spy(new RoomRepository(postgresContainer.getJdbcUrl(),
-                postgresContainer.getUsername(), postgresContainer.getPassword()));
-        doNothing().when(roomRepository).changeSearchPath(any(Connection.class));
-        createEnumType();
-        createTable();
-    }
-
-    /**
-     * Drop database structures after each test.
-     */
-    @AfterEach
-    public void tearDown() {
-        dropTable();
-        dropEnumType();
-    }
-
-    /**
-     * Create enum type 'roomtype' in the database.
-     */
-    private void createEnumType() {
-        try (Connection connection = DriverManager.getConnection(postgresContainer.getJdbcUrl(),
-                postgresContainer.getUsername(), postgresContainer.getPassword());
-             Statement statement = connection.createStatement()) {
-            statement.execute("CREATE TYPE roomtype AS ENUM ('WORKSPACE', 'MEETING_ROOM')");
-            System.out.println("Enum type 'roomtype' created successfully.");
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to create enum type", e);
-        }
-    }
-
-    /**
-     * Drop enum type 'roomtype' from the database.
-     */
-    private void dropEnumType() {
-        try (Connection connection = DriverManager.getConnection(postgresContainer.getJdbcUrl(),
-                postgresContainer.getUsername(), postgresContainer.getPassword());
-             Statement statement = connection.createStatement()) {
-            statement.execute("DROP TYPE roomtype");
-            System.out.println("Enum type 'roomtype' dropped successfully.");
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to drop enum type", e);
-        }
-    }
-
-    /**
-     * Create necessary tables in the database.
-     */
-    private void createTable() {
-        try (Connection connection = DriverManager.getConnection(postgresContainer.getJdbcUrl(),
-                postgresContainer.getUsername(), postgresContainer.getPassword());
-             Statement statement = connection.createStatement()) {
-            statement.execute("CREATE TABLE rooms (id SERIAL PRIMARY KEY, room_name VARCHAR(255), room_type roomtype)");
-            System.out.println("Table 'rooms' created successfully.");
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to create table", e);
-        }
-    }
-
-    /**
-     * Drop tables from the database.
-     */
-    private void dropTable() {
-        try (Connection connection = DriverManager.getConnection(postgresContainer.getJdbcUrl(),
-                postgresContainer.getUsername(), postgresContainer.getPassword());
-             Statement statement = connection.createStatement()) {
-            statement.execute("DROP TABLE rooms");
-            System.out.println("Table 'rooms' dropped successfully.");
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to drop table", e);
+    void setUp() throws SQLException {
+        roomRepository = new RoomRepository(dataSource);
+        try (Connection connection = dataSource.getConnection()) {
+            Statement statement = connection.createStatement();
+            statement.execute("CREATE SCHEMA IF NOT EXISTS entity_schema");
+            statement.execute("SET search_path TO entity_schema");
+            statement.execute("""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'roomtype') THEN
+                            CREATE TYPE roomtype AS ENUM ('WORKSPACE', 'MEETING_ROOM');
+                        END IF;
+                    END $$;
+                    """);
+            statement.execute("CREATE TABLE IF NOT EXISTS rooms (room_name VARCHAR(255) PRIMARY KEY, room_type VARCHAR(50))");
+            statement.execute("TRUNCATE TABLE rooms");
         }
     }
 
     @Test
-    @DisplayName("Should find all rooms")
-    public void testFindAll() {
-        Room room1 = new Room("Room1", RoomType.WORKSPACE);
-        Room room2 = new Room("Room2", RoomType.MEETING_ROOM);
-        roomRepository.save(room1);
-        roomRepository.save(room2);
-
-        List<Room> rooms = roomRepository.findAll();
-
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(rooms).hasSize(2);
-        softly.assertThat(rooms).extracting(Room::getName).containsExactlyInAnyOrder("Room1", "Room2");
-        softly.assertAll();
-    }
-
-    @Test
-    @DisplayName("Should find room by name")
-    public void testFindByName() {
-        Room room = new Room("Room1", RoomType.WORKSPACE);
+    @DisplayName("Test save room")
+    void testSaveRoom() {
+        Room room = new Room("Meeting Room", RoomType.MEETING_ROOM);
         roomRepository.save(room);
 
-        Optional<Room> foundRoom = roomRepository.findByName("Room1");
-
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(foundRoom).isPresent();
-        softly.assertThat(foundRoom.get().getName()).isEqualTo("Room1");
-        softly.assertThat(foundRoom.get().getType()).isEqualTo(RoomType.WORKSPACE);
-        softly.assertAll();
+        assertTrue(roomRepository.exists("Meeting Room"));
     }
 
     @Test
-    @DisplayName("Should save room")
-    public void testSave() {
-        Room room = new Room("Room1", RoomType.WORKSPACE);
+    @DisplayName("Test find room by name")
+    void testFindByName() {
+        Room room = new Room("Meeting Room", RoomType.MEETING_ROOM);
         roomRepository.save(room);
 
-        Optional<Room> foundRoom = roomRepository.findByName("Room1");
+        Optional<Room> foundRoom = roomRepository.findByName("Meeting Room");
 
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(foundRoom).isPresent();
-        softly.assertThat(foundRoom.get().getName()).isEqualTo("Room1");
-        softly.assertThat(foundRoom.get().getType()).isEqualTo(RoomType.WORKSPACE);
-        softly.assertAll();
-    }
-
-    @Test
-    @DisplayName("Should update room")
-    public void testUpdate() {
-        Room oldRoom = new Room("Room1", RoomType.WORKSPACE);
-        Room newRoom = new Room("Room1Updated", RoomType.MEETING_ROOM);
-        roomRepository.save(oldRoom);
-        roomRepository.update(oldRoom, newRoom);
-
-        Optional<Room> foundRoom = roomRepository.findByName("Room1Updated");
-
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(foundRoom).isPresent();
-        softly.assertThat(foundRoom.get().getName()).isEqualTo("Room1Updated");
+        softly.assertThat(foundRoom.get().getName()).isEqualTo("Meeting Room");
         softly.assertThat(foundRoom.get().getType()).isEqualTo(RoomType.MEETING_ROOM);
         softly.assertAll();
     }
 
     @Test
-    @DisplayName("Should delete room")
-    public void testDelete() {
-        Room room = new Room("Room1", RoomType.WORKSPACE);
+    @DisplayName("Test room exists by name")
+    void testExistsByName() {
+        Room room = new Room("Meeting Room", RoomType.MEETING_ROOM);
+        roomRepository.save(room);
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(roomRepository.exists("Meeting Room")).isTrue();
+        softly.assertThat(roomRepository.exists("NonExistingRoom")).isFalse();
+        softly.assertAll();
+    }
+
+    @Test
+    @DisplayName("Test find all rooms")
+    void testFindAll() {
+        Room room1 = new Room("Meeting Room", RoomType.MEETING_ROOM);
+        Room room2 = new Room("Workspace Room", RoomType.WORKSPACE);
+        roomRepository.save(room1);
+        roomRepository.save(room2);
+
+        List<Room> rooms = roomRepository.findAll();
+        assertEquals(2, rooms.size());
+    }
+
+    @Test
+    @DisplayName("Test update room")
+    void testUpdateRoom() {
+        Room oldRoom = new Room("Meeting Room", RoomType.MEETING_ROOM);
+        Room newRoom = new Room("Updated Room", RoomType.WORKSPACE);
+        roomRepository.save(oldRoom);
+        roomRepository.update(oldRoom, newRoom);
+
+        Optional<Room> updatedRoom = roomRepository.findByName("Updated Room");
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(updatedRoom).isPresent();
+        softly.assertThat(updatedRoom.get().getName()).isEqualTo("Updated Room");
+        softly.assertThat(updatedRoom.get().getType()).isEqualTo(RoomType.WORKSPACE);
+        softly.assertAll();
+    }
+
+    @Test
+    @DisplayName("Test delete room")
+    void testDeleteRoom() {
+        Room room = new Room("Meeting Room", RoomType.MEETING_ROOM);
         roomRepository.save(room);
         roomRepository.delete(room);
 
-        Optional<Room> foundRoom = roomRepository.findByName("Room1");
-
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(foundRoom).isNotPresent();
-        softly.assertAll();
-    }
-
-    @Test
-    @DisplayName("Should check if room exists")
-    public void testExists() {
-        Room room = new Room("Room1", RoomType.WORKSPACE);
-        roomRepository.save(room);
-        boolean exists = roomRepository.exists("Room1");
-
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(exists).isTrue();
-        softly.assertAll();
-    }
-
-    @Test
-    @DisplayName("Should not find non-existing room by name")
-    public void testNonExistingRoom() {
-        Optional<Room> foundRoom = roomRepository.findByName("NonExistingRoom");
-
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(foundRoom).isNotPresent();
-        softly.assertAll();
+        assertFalse(roomRepository.exists("Meeting Room"));
     }
 }

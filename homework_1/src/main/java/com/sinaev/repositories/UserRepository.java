@@ -3,7 +3,9 @@ package com.sinaev.repositories;
 import com.sinaev.handlers.SQLQueryHandler;
 import com.sinaev.models.entities.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -14,11 +16,11 @@ import java.util.Optional;
 /**
  * Repository for managing users.
  */
+@Repository
 @RequiredArgsConstructor
 public class UserRepository {
-    private final String urlDB;
-    private final String userDB;
-    private final String passwordDB;
+
+    private final DataSource dataSource;
 
     /**
      * Finds a user by their username.
@@ -29,7 +31,7 @@ public class UserRepository {
     public Optional<User> findByUsername(String username) {
         String selectSQL = "SELECT * FROM users WHERE username = ?";
         User foundUser = null;
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
             changeSearchPath(connection);
             preparedStatement.setString(1, username);
@@ -57,7 +59,7 @@ public class UserRepository {
     public void save(User saveUser) {
         String insertSQL = "INSERT INTO users(username, password, is_admin) VALUES (?, ?, ?)";
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(insertSQL)) {
 
             changeSearchPath(connection);
@@ -81,7 +83,7 @@ public class UserRepository {
     public boolean existsByUsername(String username) {
         String SQL_SELECT = "SELECT 1 FROM users WHERE username = ?";
 
-        try (Connection connection = DriverManager.getConnection(urlDB, userDB, passwordDB);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(SQL_SELECT)) {
             changeSearchPath(connection);
             preparedStatement.setString(1, username);

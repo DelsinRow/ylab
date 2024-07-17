@@ -1,10 +1,13 @@
 package com.sinaev;
 
-import liquibase.Scope;
-import liquibase.command.CommandScope;
+import liquibase.Contexts;
+import liquibase.LabelExpression;
+import liquibase.Liquibase;
+import liquibase.database.Database;
+import liquibase.database.DatabaseFactory;
+import liquibase.database.jvm.JdbcConnection;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import lombok.Builder;
-import lombok.RequiredArgsConstructor;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -13,6 +16,10 @@ import java.sql.Statement;
 
 /**
  * Handles the execution of Liquibase migrations.
+ * <p>
+ * This class is responsible for setting up the database schemas and running Liquibase
+ * to apply database changes defined in the changelog file.
+ * </p>
  */
 @Builder
 public class MyLiquibaseRunner {
@@ -34,37 +41,30 @@ public class MyLiquibaseRunner {
     }
 
     /**
-     * Runs the Liquibase update command.
+     * Runs Liquibase to apply the database changes.
+     * <p>
+     * This method sets up the schemas and runs the Liquibase migrations.
+     * </p>
      */
     public void runLiquibase() {
-        System.out.println("Running Liquibase...");
-        createSchema(defaultSchemaName);
         createSchema(entitySchemaName);
+        createSchema(defaultSchemaName);
 
-        try {
-            Scope.child(Scope.Attr.resourceAccessor, new ClassLoaderResourceAccessor(), () -> {
-                CommandScope update = new CommandScope("update");
+        try (Connection connection = DriverManager.getConnection(urlDb, usernameDb, passwordDb)) {
+            Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
 
-                update.addArgumentValue("changelogFile", changelogFile);
-                update.addArgumentValue("url", urlDb);
-                update.addArgumentValue("username", usernameDb);
-                update.addArgumentValue("password", passwordDb);
-                update.addArgumentValue("defaultSchemaName", defaultSchemaName);
-                update.addArgumentValue("entitySchemaName", entitySchemaName);
-                update.addArgumentValue("databaseChangeLogTableName", databaseChangeLogTableName);
-                update.addArgumentValue("databaseChangeLogLockTableName", databaseChangeLogLockTableName);
+            database.setDefaultSchemaName(defaultSchemaName);
+            database.setLiquibaseCatalogName(entitySchemaName);
 
-                update.execute();
-            });
+            Liquibase liquibase = new Liquibase(changelogFile, new ClassLoaderResourceAccessor(), database);
+            liquibase.update(new Contexts(), new LabelExpression());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error running Liquibase", e);
         }
-
-        System.out.println("Running Liquibase...DONE");
     }
 
     /**
-     * Creates the specified schema if it does not exist.
+     * Creates a schema if it does not already exist.
      *
      * @param schemaName the name of the schema to create
      */

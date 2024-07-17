@@ -1,0 +1,10 @@
+liquibase:
+  change-log: db/changelog/changelog.xml
+  default-schema: service_schema
+  entity-schema: entity_schema
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/myservicedb
+    username: sinaev
+    password: secretpassword
